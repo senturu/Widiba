@@ -225,7 +225,7 @@ function dateIso(v){ if(typeof v==="number"&&v>20000&&v<60000) return excelDate(
 function ynV(v){ const s=cleanStr(v); if(s==null) return null; return /^(y|yes|s|si|sì)/i.test(s)?1:0; }
 
 const PREMIUM_SCHEMA=["i","n","statusB","statusC","grp","dom","tipo","etfAtt","leva","repl","cat","sub","msCat","bench",
-  "divBase","cov","covMod","ratMS","anno","costi","wl","aum","distT","distF","divNav","nav","navD","p1yB","p1y","p3y","p5y",
+  "divBase","divPort","cov","covMod","ratMS","anno","costi","wl","aum","distT","distF","divNav","nav","navD","p1yB","p1y","p3y","p5y",
   "sd3","sd1","sh3","sh1","dd3","dd1","cGA3","cGA1","cHY3","cHY1","cSE35_3","cSE35_1","cSE710_3","cSE710_1","cW3","cW1",
   "cUS3","cUS1","cEU3","cEU1","cEM3","cEM1","cCO3","cCO1","spread","var","aaEq","aaBd","aaCs","aaOt","aaCm","top10",
   "sCyc","sDef","sSen","rDev","rEmg","rAme","rEuD","ricUS","ricEU","bDev","bEmg","bGov","bIta","bCorp","bIG","bSG",
@@ -233,7 +233,7 @@ const PREMIUM_SCHEMA=["i","n","statusB","statusC","grp","dom","tipo","etfAtt","l
 
 function transformPremium(aoa){
   const data=aoa.slice(2).filter(r=>r&&r[3]);   // riga0=intestazioni raggruppate, riga1=header colonne, dati da riga2; ISIN in colonna D (idx 3)
-  const dictFields=["grp","dom","tipo","repl","cat","sub","msCat","divBase","covMod","distT","distF","effic","statusB","statusC"];
+  const dictFields=["grp","dom","tipo","repl","cat","sub","msCat","divBase","divPort","covMod","distT","distF","effic","statusB","statusC"];
   const dicts={}; dictFields.forEach(k=>dicts[k]=[]);
   const dref=(k,v)=>{ v=cleanStr(v); if(v==null) return null; let i=dicts[k].indexOf(v); if(i===-1){ i=dicts[k].length; dicts[k].push(v); } return i; };
   const seen=new Set(); const rows=[];
@@ -246,7 +246,7 @@ function transformPremium(aoa){
       dref("grp",r[4]), dref("dom",r[5]), dref("tipo",r[6]),
       ynV(r[7]), ynV(r[8]), dref("repl",r[9]),
       dref("cat",r[10]), dref("sub",r[11]), dref("msCat",r[12]), cleanStr(r[13]),
-      dref("divBase",r[15]), cov, dref("covMod",r[17]),
+      dref("divBase",r[15]), dref("divPort",r[14]), cov, dref("covMod",r[17]),
       rank10(r[18]), yearOf(r[19]), numV(r[20]), numV(r[21]), rank10(r[22]),
       dref("distT",r[23]), dref("distF",r[24]), numV(r[25]),
       numV(r[27],2), dateIso(r[28]),
