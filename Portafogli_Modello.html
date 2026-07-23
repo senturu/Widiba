@@ -352,10 +352,9 @@ table.cmp td.worst{color:var(--neg)}
   border:1px solid rgba(164,71,95,.25)}
 
 /* ---- hero home ---- */
-.hero{padding:28px 20px 22px;text-align:center;background:linear-gradient(180deg,var(--blu) 0%,var(--blu) 62%,var(--avorio) 100%)}
-.hero-eyebrow{font-family:var(--tLight);text-transform:uppercase;letter-spacing:.16em;font-size:10.5px;color:var(--magenta);margin-bottom:10px}
-.hero-title{font-family:var(--tMed);font-size:27px;color:#fff;margin:0 0 8px;letter-spacing:-.01em}
-.hero-sub{font-family:var(--tBook);font-size:13px;color:#c9cad3;line-height:1.5;max-width:380px;margin:0 auto}
+.plainhead{padding:18px 16px 14px;border-bottom:1px solid var(--hair)}
+.plainhead-title{font-family:var(--tMed);font-size:19px;color:var(--blu);margin:0 0 5px}
+.plainhead-sub{font-family:var(--tBook);font-size:12.5px;color:var(--grigio);line-height:1.5;max-width:520px}
 .pickrow-label{font-family:var(--tLight);text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:var(--magenta);padding:20px 16px 10px}
 .pickrow-label.first{padding-top:22px}
 
@@ -419,30 +418,43 @@ table.cmp td.worst{color:var(--neg)}
 .idh-isin{font-family:var(--tBook);font-size:11.5px;color:var(--grigio);font-variant-numeric:tabular-nums}
 
 /* ---- desktop ---- */
-@media (min-width:900px){
-  .brandrow{max-width:1000px;margin:0 auto;padding:4px 24px}
-  .hero{max-width:1000px;margin:0 auto;border-radius:0 0 28px 28px;padding:48px 40px 36px}
-  .hero-title{font-size:32px}
-  .pickrow-label{max-width:1000px;margin:0 auto;padding-left:24px;padding-right:24px}
-  .proflist{max-width:1000px;margin:0 auto;padding-left:24px;padding-right:24px}
-  .subheader{max-width:1000px;margin:0 auto;padding-left:24px;padding-right:24px}
-  .bankgrid{max-width:1000px;margin:0 auto;padding-left:24px;padding-right:24px;flex-direction:row}
-  .bankcard{flex:1}
-  .bankcard:hover{border-color:var(--magenta);box-shadow:0 6px 18px -8px rgba(0,0,0,.15)}
-  .allocbar,.alloclegend,.cmpaddbtn,.instr-group-h{max-width:1000px;margin-left:auto;margin-right:auto}
-  .allocbar{margin-top:16px;margin-bottom:10px}
-  .pinstr-row{max-width:1000px;margin:0 auto}
-  .pinstr-row:hover{background:var(--avorio2)}
-  .cmp-toolbar,.cmp-scroll,.block{max-width:1000px;margin-left:auto;margin-right:auto}
-  #bottomnav{max-width:340px;left:50%;right:auto;transform:translateX(-50%);bottom:22px;
-    border-radius:18px;border:1px solid var(--hair);box-shadow:0 16px 40px -14px rgba(44,46,57,.28)}
-  .navbtn{cursor:pointer}
-  #app{padding-bottom:110px}
-  .sheet{max-width:680px;margin:0 auto;border-radius:20px;box-shadow:0 30px 70px -20px rgba(44,46,57,.35)}
-  .sheet-b{padding-left:28px;padding-right:28px}
-  .profcard{cursor:pointer}
-  .profcard:hover{border-color:var(--magenta)}
-}
+
+
+/* ---- toolbar confronto: testo e pulsante Svuota ben distanziati ---- */
+.cmp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px}
+.cmp-toolbar span{font-family:var(--tMed);font-size:12.5px;color:var(--blu)}
+
+/* ---- contenitore ad altezza fissa per i loghi (MPS ovale vs Mediobanca wordmark hanno proporzioni molto diverse) ---- */
+.logobox{display:inline-flex;align-items:center;justify-content:center;height:30px}
+.cmp-name .logobox{height:30px;margin-bottom:4px;justify-content:flex-start;width:100%}
+.subheader-title .logobox{height:22px}
+.subheader-title .logobox img{max-height:22px}
+
+/* ---- confronto: asterisco Mediobanca, intestazioni di categoria nella tabella ---- */
+.mbstar{color:var(--magenta);font-size:11px}
+.cmp-cathead td{background:var(--avorio2);font-family:var(--tLight);text-transform:uppercase;letter-spacing:.1em;
+  font-size:10px;color:var(--magenta);padding:7px 10px!important}
+
+/* ---- home: selettore banca in alto (ingresso alternativo al profilo) ---- */
+.bankpickrow{display:flex;gap:10px;padding:0 16px 4px}
+.bankpick{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff;border:1px solid var(--hair);
+  border-radius:14px;padding:16px 12px;cursor:pointer}
+.bankpick span{font-family:var(--tMed);font-size:12px;color:var(--blu)}
+
+/* ---- stato banca attiva nella vista unificata ---- */
+.bankcard.active{border-color:var(--magenta);box-shadow:0 0 0 1px var(--magenta) inset;background:rgba(208,63,101,.04)}
+.bankcard.active .bankcard-cta{color:var(--pos)}
+
+/* ---- selettore profilo compatto (percorso banca-first) ---- */
+.proflist.compact{flex-direction:row;flex-wrap:wrap;gap:8px;padding:14px 16px}
+.profcard.sm{flex:0 0 auto;min-width:0;padding:9px 13px;border-radius:12px}
+.profcard.sm .profcard-top{gap:6px}
+
+/* ---- pulsante dati aggregati a paniere ---- */
+.basketbtn{display:flex;align-items:center;gap:8px;width:calc(100% - 32px);margin:0 16px 6px;
+  background:var(--avorio2);border:1px dashed var(--hair);color:var(--blu);border-radius:12px;
+  padding:11px 14px;font-family:var(--tMed);font-size:12px;cursor:pointer;text-align:left}
+.basketblock{margin:10px 16px 18px}
 
 </style>
 </head>
@@ -472,7 +484,6 @@ table.cmp td.worst{color:var(--neg)}
 
   <div id="view-home" class="view"></div>
   <div id="view-banks" class="view hidden"></div>
-  <div id="view-portfolio" class="view hidden"></div>
   <div id="view-compare" class="view hidden"></div>
 
   <div id="bottomnav">
@@ -515,8 +526,8 @@ const CATGROUP_ICON={
   "Real Assets": ico('<path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M5 7l7 4 7-4M12 11v10"/>'),
 };
 const CATGROUP_COLOR={
-  "Equity":"var(--azionario)", "Fixed Income":"var(--obbligazionario)",
-  "Capital Preservation":"var(--liquidita)", "Real Assets":"var(--bilanciato)",
+  "Equity":"#2F7A5C", "Fixed Income":"#2E5F8F",
+  "Capital Preservation":"#C79A2E", "Real Assets":"#A0447A",
 };
 function ico(paths,vb){ return `<svg class="ico" width="1em" height="1em" viewBox="0 0 ${vb||24} ${vb||24}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`; }
 function catIcon(g){ return CATGROUP_ICON[g]||ico('<circle cx="12" cy="12" r="8"/>'); }
@@ -652,15 +663,33 @@ function searchGeneric(db,isin){
 /* campi tecnici/ridondanti da non mostrare nella scheda sintetica: correlazioni (cXxx) e il campo
    "tipo strumento" del catalogo sorgente, che per gli ETP è sempre un valore generico ("Exchange-Traded
    Fund") anche per ETC/ETN e genererebbe confusione con il tipo corretto già mostrato in testa alla scheda */
-function skipField(k){ return /^c[A-Z]/.test(k) || ["tipo","strumento","tipoStrumento"].includes(k); }
+function skipField(k){ return /^c[A-Z]/.test(k) || ["tipo","strumento","tipoStrumento","nav","navEur","navD"].includes(k); }
+const FIELD_CATS=[
+  {name:"Costi e dimensione", keys:["costi","commGest","commDist","payUp","payCont","aum"]},
+  {name:"Performance", keys:["p1yB","p1y","p3y","p5y"]},
+  {name:"Rischio", keys:["sd1","sd3","sh1","sh3","dd1","dd3","var","spread"]},
+  {name:"Portafoglio e distribuzione", keys:["ratingMS","wl","whiteList","classe","distrib","status","leva","repl","cov","covMod"]},
+];
+function fieldCategory(k){ for(const c of FIELD_CATS) if(c.keys.includes(k)) return c.name; return "Altro"; }
 const FIELD_LABELS={
   isin:"ISIN", i:"ISIN", nome:"Nome", n:"Nome", casa:"Casa/Emittente", emittente:"Emittente",
   domicilio:"Domicilio", valuta:"Valuta", divBase:"Divisa base", divPort:"Divisa portafoglio",
   macro:"Categoria", cat:"Categoria", sub:"Sotto categoria", msCat:"Categoria Morningstar",
-  costi:"Costi correnti %", commGest:"Commissione gestione %", aum:"AUM (rank)",
-  p1y:"Performance 1A %", p3y:"Performance 3A %", p5y:"Performance 5A %",
-  ratingMS:"Rating Morningstar", sh1:"Sharpe 1A (rank)", sd1:"DevStd 1A (rank)",
-  var:"VaR (rank)", status:"Stato", classe:"Classe", distrib:"Distribuzione",
+  bench:"Benchmark primario", benchmark:"Benchmark primario",
+  costi:"Costi correnti (%)", commGest:"Commissione di gestione (%)", commDist:"Commissione di distribuzione (%)",
+  payUp:"Pay-out upfront (%)", payCont:"Pay-out continuing (%)",
+  aum:"Dimensione del fondo (AUM, rank 1-10)",
+  p1yB:"Performance 1 anno, divisa base (%)", p1y:"Performance 1 anno, EUR (%)",
+  p3y:"Performance 3 anni annualizzata (%)", p5y:"Performance 5 anni annualizzata (%)",
+  ratingMS:"Rating Morningstar", sh1:"Sharpe ratio 1 anno (rank 1-10)", sh3:"Sharpe ratio 3 anni (rank 1-10)",
+  sd1:"Deviazione standard 1 anno (rank 1-10)", sd3:"Deviazione standard 3 anni (rank 1-10)",
+  dd1:"Max Drawdown 1 anno (rank 1-10)", dd3:"Max Drawdown 3 anni (rank 1-10)",
+  var:"Value at Risk (rank 1-10)", spread:"Bid/Ask spread medio (rank 1-10)",
+  status:"Stato di collocamento", classe:"Classe", distrib:"Politica di distribuzione",
+  wl:"Percentuali titoli obbligazionari in Paesi White List",
+  whiteList:"Percentuali titoli obbligazionari in Paesi White List",
+  leva:"Leva", repl:"Metodo di replica", tipo:"Tipologia strumento", anno:"Anno di lancio",
+  cov:"Copertura valutaria", covMod:"Copertura valutaria (modalità)",
 };
 function niceLabel(k){ return FIELD_LABELS[k]||k.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()); }
 function fmtVal(v){
@@ -725,91 +754,131 @@ function goto(mode){
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("on",b.dataset.mode===mode));
   window.scrollTo(0,0);
 }
-function selectProfile(code){ S.profile=code; renderBanks(); goto("banks"); }
-function selectBank(bankKey){ S.bank=bankKey; renderPortfolio(); goto("portfolio"); }
-function backToHome(){ goto("home"); }
-function backToBanks(){ goto("banks"); }
+function selectProfile(code){ S.profile=code; S.bank=null; renderMain(); goto("banks"); }
+function selectBankFirst(bankKey){ S.bank=bankKey; S.profile=null; renderMain(); goto("banks"); }
+function pickBank(key){ S.bank=key; renderMain(); }
+function pickProfile(code){ S.profile=code; renderMain(); }
+function changeProfile(){ S.profile=null; S.bank=null; goto("home"); }
 
-/* ============ home: selettore profilo di rischio ============ */
+/* ============ home: doppio ingresso, per banca o per profilo di rischio ============ */
 function renderHome(){
   const el=document.getElementById("view-home");
-  let h=`<div class="hero">
-    <div class="hero-eyebrow">Advisory Desk · Rete Consulenti Finanziari</div>
-    <h1 class="hero-title">Portafogli Modello</h1>
-    <p class="hero-sub">Le proposte di Banca MPS e Mediobanca per profilo di rischio: composizione, dettagli e confronto.</p>
+  let h=`<div class="plainhead">
+    <div class="plainhead-title">Portafogli Modello</div>
+    <p class="plainhead-sub">Le proposte di Banca MPS e Mediobanca per profilo di rischio: composizione, dettagli e confronto.</p>
   </div>`;
-  h+=`<div class="pickrow-label first">Scegli il profilo di rischio del cliente</div>`;
+
+  h+=`<div class="pickrow-label first">Parti dalla banca</div>`;
+  h+=`<div class="bankpickrow">`;
+  [["mps","Banca Monte dei Paschi di Siena"],["mediobanca","Mediobanca"]].forEach(([key,label])=>{
+    h+=`<button class="bankpick" onclick="selectBankFirst('${key}')">${logoImg(key)}<span>${esc(BANK_META[key].short)}</span></button>`;
+  });
+  h+=`</div>`;
+
+  h+=`<div class="pickrow-label">Oppure parti dal profilo di rischio del cliente</div>`;
   h+=`<div class="proflist">`;
   DATA.profiles.forEach(p=>{
     const risk=riskScore(p.code);
     const riskPct=Math.round(risk*100);
-    const nMps=itemsForProfile("mps",p.code).length, nMb=itemsForProfile("mediobanca",p.code).length;
     h+=`<button class="profcard" onclick="selectProfile('${p.code}')">
       <div class="profcard-top"><span class="profcode">${p.code}</span><span class="proflabel">${esc(p.label)}</span></div>
       <div class="riskgauge"><div class="riskgauge-fill" style="width:${riskPct}%"></div></div>
-      <div class="profcard-bottom"><span class="tiny">Componente azionaria media ~${riskPct}%</span><span class="tiny">${nMps+nMb} proposte</span></div>
+      <div class="profcard-bottom"><span class="tiny">Componente azionaria media ~${riskPct}%</span></div>
     </button>`;
   });
   h+=`</div>`;
-  el.innerHTML=h;
-}
-
-/* ============ scelta banca dopo il profilo ============ */
-function renderBanks(){
-  const el=document.getElementById("view-banks");
-  const p=DATA.profiles.find(x=>x.code===S.profile);
-  let h=`<div class="subheader"><button class="backbtn" onclick="backToHome()">${ico('<path d="M15 18l-6-6 6-6"/>')} Profilo</button>
-    <div class="subheader-title"><span class="profcode sm">${p.code}</span> ${esc(p.label)}</div></div>`;
-  h+=`<div class="bankgrid">`;
-  [["mps","Banca Monte dei Paschi di Siena"],["mediobanca","Mediobanca"]].forEach(([key,label])=>{
-    const items=itemsForProfile(key,S.profile);
-    const breakdown=catBreakdown(items,S.profile);
-    const top=breakdown[0];
-    h+=`<button class="bankcard bankcard-${key}" onclick="selectBank('${key}')">
-      <div class="bankcard-logo">${logoImg(key)}</div>
-      <div class="bankcard-name">${esc(label)}</div>
-      <div class="bankcard-stats"><span class="tiny">${items.length} strumenti</span>${top?`<span class="tiny">· prevalenza ${esc(top[0])} ${pctFmt(top[1])}</span>`:""}</div>
-      <div class="bankcard-cta">Vedi proposta ${ico('<path d="M9 6l6 6-6 6"/>')}</div>
-    </button>`;
-  });
-  h+=`</div>`;
+  h+=`<div class="notebox" style="margin:6px 16px 24px">Portafogli modello definiti sulla base delle informazioni fornite all'interno del questionario MiFID.</div>`;
   el.innerHTML=h;
 }
 function logoImg(key){
-  if(key==="mps") return `<img src="data:image/png;base64,${MPS_LOGO}" alt="MPS" class="logo-mps">`;
-  return `<img src="data:image/png;base64,${MEDIOBANCA_LOGO}" alt="Mediobanca" class="logo-mediobanca">`;
+  if(key==="mps") return `<span class="logobox"><img src="data:image/png;base64,${MPS_LOGO}" alt="MPS" class="logo-mps"></span>`;
+  return `<span class="logobox"><img src="data:image/png;base64,${MEDIOBANCA_LOGO}" alt="Mediobanca" class="logo-mediobanca"></span>`;
 }
 
-/* ============ composizione portafoglio ============ */
-function renderPortfolio(){
-  const el=document.getElementById("view-portfolio");
-  const p=DATA.profiles.find(x=>x.code===S.profile);
-  const bank=DATA.banche[S.bank];
-  const items=itemsForProfile(S.bank,S.profile);
-  const breakdown=catBreakdown(items,S.profile);
-  const key=S.bank+":"+S.profile;
+/* ============ vista unificata: scelta banca/profilo + composizione inline ============ */
+function renderMain(){
+  const el=document.getElementById("view-banks");
+  let h="";
+
+  // testata contestuale, adattata a cosa manca ancora scegliere
+  if(S.profile){
+    const p=DATA.profiles.find(x=>x.code===S.profile);
+    h+=`<div class="subheader"><button class="backbtn" onclick="changeProfile()">${ico('<path d="M15 18l-6-6 6-6"/>')} Home</button>
+      <div class="subheader-title"><span class="profcode sm">${p.code}</span> ${esc(p.label)}</div></div>`;
+  }else if(S.bank){
+    h+=`<div class="subheader"><button class="backbtn" onclick="changeProfile()">${ico('<path d="M15 18l-6-6 6-6"/>')} Home</button>
+      <div class="subheader-title">${logoImg(S.bank)} <span>${esc(BANK_META[S.bank].label)} — scegli il profilo</span></div></div>`;
+  }
+
+  // riga banche (sempre visibile quando c'è un profilo scelto, per poter confrontare/cambiare al volo)
+  if(S.profile){
+    h+=`<div class="bankgrid">`;
+    [["mps","Banca Monte dei Paschi di Siena"],["mediobanca","Mediobanca"]].forEach(([key,label])=>{
+      const items=itemsForProfile(key,S.profile);
+      const breakdown=catBreakdown(items,S.profile);
+      const top=breakdown[0];
+      const active=S.bank===key;
+      h+=`<button class="bankcard bankcard-${key} ${active?'active':''}" onclick="pickBank('${key}')">
+        <div class="bankcard-logo">${logoImg(key)}</div>
+        <div class="bankcard-name">${esc(label)}</div>
+        <div class="bankcard-stats"><span class="tiny">${items.length} strumenti</span>${top?`<span class="tiny">· prevalenza ${esc(top[0])} ${pctFmt(top[1])}</span>`:""}</div>
+        <div class="bankcard-cta">${active?'Proposta selezionata':'Vedi proposta'} ${ico('<path d="M9 6l6 6-6 6"/>')}</div>
+      </button>`;
+    });
+    h+=`</div>`;
+  }
+
+  // se manca il profilo (percorso banca-first), mostro il selettore profilo compatto
+  if(S.bank && !S.profile){
+    h+=`<div class="proflist compact">`;
+    DATA.profiles.forEach(p=>{
+      h+=`<button class="profcard sm" onclick="pickProfile('${p.code}')">
+        <div class="profcard-top"><span class="profcode">${p.code}</span><span class="proflabel">${esc(p.label)}</span></div>
+      </button>`;
+    });
+    h+=`</div>`;
+  }
+
+  // composizione inline, se sia banca che profilo sono scelti
+  if(S.bank && S.profile){
+    h+=portfolioCompositionHtml(S.bank,S.profile);
+  }
+
+  el.innerHTML=h;
+  if(S.bank && S.profile) bindBasketButton();
+}
+
+/* ============ composizione portafoglio (usata inline nella vista unificata) ============ */
+function portfolioCompositionHtml(bankKey,code){
+  const items=itemsForProfile(bankKey,code);
+  const breakdown=catBreakdown(items,code);
+  const key=bankKey+":"+code;
   const inCmp=S.sel.has(key);
 
-  let h=`<div class="subheader"><button class="backbtn" onclick="backToBanks()">${ico('<path d="M15 18l-6-6 6-6"/>')} Proposte</button>
-    <div class="subheader-title">${logoImg(S.bank)} <span>${esc(bank.short)} · <span class="profcode sm">${p.code}</span></span></div></div>`;
-
-  h+=`<div class="allocbar">`;
+  let h=`<div class="allocbar">`;
   breakdown.forEach(([g,w])=>{ h+=`<div class="allocseg" style="width:${(w*100)}%;background:${catColor(g)}" title="${esc(g)} ${pctFmt(w)}"></div>`; });
   h+=`</div><div class="alloclegend">`;
   breakdown.forEach(([g,w])=>{ h+=`<span class="alloclegend-item"><i style="background:${catColor(g)}"></i>${catIcon(g)} ${esc(g)} <b>${pctFmt(w)}</b></span>`; });
   h+=`</div>`;
 
-  const mbNote=(S.bank==="mediobanca")?`<div class="notebox">${MB_DISCLAIMER}</div>`:"";
-  h+=mbNote;
+  if(bankKey==="mediobanca") h+=`<div class="notebox">${MB_DISCLAIMER}</div>`;
 
   h+=`<button class="cmpaddbtn ${inCmp?'on':''}" onclick="togglePortfolioCmp(this)">
     ${inCmp?'✓ Portafoglio nel confronto':'+ Aggiungi questo portafoglio al confronto'}</button>`;
 
+  h+=`<button class="basketbtn" id="basketBtn" data-bank="${bankKey}" data-code="${code}">
+    ${ico('<path d="M4 6h16M6 6l1 13a2 2 0 002 2h6a2 2 0 002-2l1-13M10 10v6M14 10v6"/>')}
+    Vedi dati aggregati a paniere (Sinottica / Analitica Fondi e ETF)</button>
+  <div id="basketOut"></div>`;
+
   h+=`<div class="instr-group-h">Composizione (${items.length} strumenti)</div>`;
   items.forEach(it=>{
-    const w=it.pesi[S.profile]||0;
-    h+=`<div class="pinstr-row" onclick="${it.isin?`openInstrumentDetail('${escq(it.isin)}','${escq(it.nome)}')`:''}">
-      <div class="pinstr-catdot" style="background:${catColor(it.catGroup)}"></div>
+    const w=it.pesi[code]||0;
+    const fillPct=Math.min(100, (w/0.40)*100);
+    const c=catColor(it.catGroup);
+    h+=`<div class="pinstr-row" style="background:linear-gradient(90deg,${c}22 0%,${c}22 ${fillPct}%,transparent ${fillPct}%)"
+        onclick="${it.isin?`openInstrumentDetail('${escq(it.isin)}','${escq(it.nome)}')`:''}">
+      <div class="pinstr-catdot" style="background:${c}"></div>
       <div class="pinstr-main">
         <div class="pinstr-name">${esc(it.nome)}</div>
         <div class="pinstr-sub">${it.isin?esc(it.isin):'<span class="tiny">senza ISIN (liquidità)</span>'} ${it.msCat?"· "+esc(it.msCat):""}</div>
@@ -817,7 +886,32 @@ function renderPortfolio(){
       <div class="pinstr-w">${pctFmt(w)}</div>
     </div>`;
   });
-  el.innerHTML=h;
+  return h;
+}
+function bindBasketButton(){
+  const btn=document.getElementById("basketBtn");
+  if(!btn) return;
+  btn.onclick=()=>renderBasket(btn.dataset.bank,btn.dataset.code);
+}
+const BASKET_DISCLAIMER="Le performance sono calcolate sulla base dell'attuale composizione del portafoglio e non sull'effettiva composizione del portafoglio modello nel corso del tempo. La composizione del portafoglio nel tempo tendenzialmente subisce variazioni negli strumenti e nella esposizione delle asset class.";
+async function renderBasket(bankKey,code){
+  const out=document.getElementById("basketOut");
+  if(!out) return;
+  out.innerHTML=`<div class="loadingline"><span class="spinner"></span> Calcolo del dato aggregato a paniere…</div>`;
+  const m=await computePortfolioMetrics(bankKey,code);
+  const pct=m.totalW?Math.round(100*m.coveredW/m.totalW):0;
+  let h=`<div class="block basketblock"><div class="bh">Dati aggregati a paniere</div>
+    <div class="tiny" style="margin-bottom:10px">Copertura catalogo Widiba: <b>${pct}%</b> del peso del portafoglio (${m.results.filter(r=>r.data).length} di ${m.results.length} strumenti con ISIN trovati)</div>
+    <div class="grid2">`;
+  const skip2=new Set(["isin","i","nome","n","Isin","ISIN","Nome"]);
+  const keys=Object.keys(m.metrics).filter(k=>!skip2.has(k)&&!skipField(k));
+  if(!keys.length){ h+=`</div><div class="notfound-banner">Nessun dato numerico aggregabile trovato per gli strumenti di questo portafoglio nei cataloghi collegati.</div>`; }
+  else{
+    keys.forEach(k=>{ h+=`<div class="cell"><div class="k">${esc(niceLabel(k))}</div><div class="v">${fmtVal(m.metrics[k])}</div></div>`; });
+    h+=`</div>`;
+  }
+  h+=`<div class="alertbox" style="margin-top:12px">⚠️ ${BASKET_DISCLAIMER}</div></div>`;
+  out.innerHTML=h;
 }
 function togglePortfolioCmp(btn){
   const key=S.bank+":"+S.profile;
@@ -874,6 +968,11 @@ async function openInstrumentDetail(isin,nome){
   openSheet("Dettaglio strumento",h,`<button class="btn ghost" onclick="closeSheet()">Chiudi</button>`,true);
 }
 const MB_DISCLAIMER="Attenzione: al momento non tutti gli strumenti presenti nei portafogli modello di Mediobanca Premier sono implementabili attraverso il catalogo Widiba.";
+const MB_INDICATIVO="Il dato di Mediobanca è relativo alla media pesata dei soli strumenti attualmente a catalogo ed è meramente indicativo.";
+function allocLegend(){
+  const cats=["Equity","Fixed Income","Capital Preservation","Real Assets"];
+  return `<div class="alloclegend">${cats.map(g=>`<span class="alloclegend-item"><i style="background:${catColor(g)}"></i>${catIcon(g)} ${esc(g)}</span>`).join("")}</div>`;
+}
 
 /* ============ confronto tra portafogli modello ============ */
 function clearCmp(){ S.sel.clear(); S.cmpMeta={}; refreshCmpBadge(); renderCompare(); }
@@ -913,7 +1012,10 @@ async function renderCompare(){
   if(!document.getElementById("cmpLoad")) return;
 
   h+=`<div class="cmp-scroll"><table class="cmp"><thead><tr><th class="rowlab">Voce</th>`;
-  computed.forEach(c=>{ h+=`<th><div class="cmp-name">${logoImg(c.bankKey)}<br>${esc(BANK_META[c.bankKey].short)} · ${c.code}</div></th>`; });
+  computed.forEach(c=>{
+    const isMb=c.bankKey==="mediobanca";
+    h+=`<th><div class="cmp-name">${logoImg(c.bankKey)}<br>${esc(BANK_META[c.bankKey].short)}${isMb?'<sup class="mbstar">*</sup>':''} · ${c.code}</div></th>`;
+  });
   h+=`</tr></thead><tbody>`;
   h+=`<tr><td class="rowlab">Strumenti</td>`+computed.map(c=>`<td>${c.items.length}</td>`).join("")+`</tr>`;
   h+=`<tr><td class="rowlab">Copertura catalogo Widiba</td>`+computed.map(c=>{
@@ -924,24 +1026,43 @@ async function renderCompare(){
 
   const allKeys={}; computed.forEach(c=>{ for(const k in c.metrics) allKeys[k]=(allKeys[k]||0)+1; });
   const sharedKeys=Object.keys(allKeys).filter(k=>allKeys[k]>=2);
-  sharedKeys.forEach(k=>{
-    const vals=computed.map(c=>c.metrics[k]);
-    const valid=vals.filter(v=>typeof v==="number");
-    const hi=higherIsBetter2(k);
-    const best=hi!==0&&valid.length>1?(hi>0?Math.max(...valid):Math.min(...valid)):null;
-    const worst=hi!==0&&valid.length>1?(hi>0?Math.min(...valid):Math.max(...valid)):null;
-    h+=`<tr><td class="rowlab">${esc(niceLabel(k))} <span class="tiny">(media pesata)</span></td>`;
-    vals.forEach(v=>{ let cls=""; if(v!=null&&best!=null){ if(v===best)cls="best"; else if(v===worst)cls="worst"; }
-      h+=`<td class="${cls}">${v==null?"—":fmtVal(v)}</td>`; });
-    h+=`</tr>`;
+  // raggruppo per categoria e mantengo solo le categorie che hanno almeno un campo condiviso
+  FIELD_CATS.forEach(fc=>{
+    const keysInCat=fc.keys.filter(k=>sharedKeys.includes(k));
+    if(!keysInCat.length) return;
+    h+=`<tr class="cmp-cathead"><td colspan="${computed.length+1}">${esc(fc.name)}</td></tr>`;
+    keysInCat.forEach(k=>{
+      const vals=computed.map(c=>c.metrics[k]);
+      const valid=vals.filter(v=>typeof v==="number");
+      const hi=higherIsBetter2(k);
+      const best=hi!==0&&valid.length>1?(hi>0?Math.max(...valid):Math.min(...valid)):null;
+      const worst=hi!==0&&valid.length>1?(hi>0?Math.min(...valid):Math.max(...valid)):null;
+      h+=`<tr><td class="rowlab">${esc(niceLabel(k))}</td>`;
+      vals.forEach(v=>{ let cls=""; if(v!=null&&best!=null){ if(v===best)cls="best"; else if(v===worst)cls="worst"; }
+        h+=`<td class="${cls}">${v==null?"—":fmtVal(v)}</td>`; });
+      h+=`</tr>`;
+    });
   });
+  // eventuali campi condivisi non categorizzati (fallback, non dovrebbero comparire quasi mai)
+  const uncategorized=sharedKeys.filter(k=>fieldCategory(k)==="Altro");
+  if(uncategorized.length){
+    h+=`<tr class="cmp-cathead"><td colspan="${computed.length+1}">Altro</td></tr>`;
+    uncategorized.forEach(k=>{
+      const vals=computed.map(c=>c.metrics[k]);
+      h+=`<tr><td class="rowlab">${esc(niceLabel(k))}</td>`+vals.map(v=>`<td>${v==null?"—":fmtVal(v)}</td>`).join("")+`</tr>`;
+    });
+  }
   h+=`</tbody></table></div>
-    <div class="tiny" style="margin:8px 2px">Le metriche sono <b>medie ponderate per il peso di ciascuno strumento</b> nel portafoglio, calcolate solo sugli strumenti trovati nei cataloghi collegati (vedi copertura). <span class="pos">Verde</span> = migliore · <span class="neg">rosso</span> = peggiore.</div>`;
+    <div class="tiny" style="margin:10px 2px 4px">Le metriche sono <b>medie ponderate per il peso di ciascuno strumento</b> nel portafoglio, calcolate solo sugli strumenti trovati nei cataloghi collegati (vedi copertura). <span class="pos">Verde</span> = migliore · <span class="neg">rosso</span> = peggiore.</div>`;
+  if(computed.some(c=>c.bankKey==="mediobanca")){
+    h+=`<div class="tiny" style="margin:2px 2px 4px">* ${esc(MB_INDICATIVO)}</div>`;
+  }
 
   h+=`<div class="block"><div class="bh">Allocazione per categoria</div>`;
+  h+=allocLegend();
   computed.forEach(c=>{
     const breakdown=catBreakdown(c.items,c.code);
-    h+=`<div class="cmp-alloc-row"><div class="cmp-alloc-label">${esc(BANK_META[c.bankKey].short)} · ${c.code}</div>
+    h+=`<div class="cmp-alloc-row"><div class="cmp-alloc-label">${logoImg(c.bankKey)} ${esc(BANK_META[c.bankKey].short)} · ${c.code}</div>
       <div class="allocbar sm">${breakdown.map(([g,w])=>`<div class="allocseg" style="width:${w*100}%;background:${catColor(g)}" title="${esc(g)} ${pctFmt(w)}"></div>`).join("")}</div></div>`;
   });
   h+=`</div>`;
