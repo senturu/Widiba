@@ -1,0 +1,33 @@
+{
+  "generato": "2026-07-25",
+  "links": {
+    "sinottica": {
+      "tool": "https://senturu.github.io/Widiba/Sinottica_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Sinottica_Converter_210.html"
+    },
+    "fondietf": {
+      "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_Converter.html"
+    },
+    "etcetn": {
+      "tool": "https://senturu.github.io/Widiba/Analitica_ETC_ETN_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Analitica_ETC_ETN_Converter.html"
+    },
+    "bond": {
+      "tool": "https://senturu.github.io/Widiba/Analitica_Bond_150_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Analitica_Bond_Converter_130.html"
+    },
+    "azioni": {
+      "tool": "https://senturu.github.io/Widiba/Analitica_Azioni_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Analitica_Azioni_Converter.html"
+    },
+    "focus": {
+      "tool": "https://senturu.github.io/Widiba/Strumenti_in_Focus_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Strumenti_in_Focus_Converter.html"
+    },
+    "portafogli": {
+      "tool": "https://senturu.github.io/Widiba/Portafogli_Modello_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Portafogli_Modello_Converter.html"
+    }
+  }
+}
