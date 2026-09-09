@@ -1,9 +1,9 @@
 {
-  "generato": "2026-07-25",
+  "generato": "2026-09-09",
   "links": {
     "sinottica": {
-      "tool": "https://senturu.github.io/Widiba/Sinottica_Interno.html",
-      "converter": "https://senturu.github.io/Widiba/Sinottica_Converter_210.html"
+      "tool": "https://senturu.github.io/Widiba/Sinottica_301_Interno.html",
+      "converter": "https://senturu.github.io/Widiba/Sinottica_Converter.html"
     },
     "fondietf": {
       "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_Interno.html",
