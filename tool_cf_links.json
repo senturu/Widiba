@@ -1,8 +1,8 @@
 {
-  "generato": "2026-09-09",
+  "generato": "2026-10-26",
   "links": {
     "sinottica": {
-      "tool": "https://senturu.github.io/Widiba/Sinottica_301_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Sinottica_302_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Sinottica_Converter.html"
     },
     "fondietf": {
@@ -14,7 +14,7 @@
       "converter": "https://senturu.github.io/Widiba/Analitica_ETC_ETN_Converter.html"
     },
     "bond": {
-      "tool": "https://senturu.github.io/Widiba/Analitica_Bond_150_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Analitica_Bond_155_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Analitica_Bond_Converter_130.html"
     },
     "azioni": {
