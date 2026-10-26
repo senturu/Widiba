@@ -222,6 +222,9 @@ function rank10(v){ const n=numV(v,0); if(n==null) return null; return (n>=0&&n<
 function yearOf(v){ if(typeof v==="number"&&v>20000&&v<60000) return excelDate(v).getUTCFullYear();
   const s=cleanStr(v); if(!s) return null; const m=s.match(/\b(19|20)\d{2}\b/); return m?+m[0]:null; }
 function dateIso(v){ if(typeof v==="number"&&v>20000&&v<60000) return excelDate(v).toISOString().slice(0,10); return null; }
+const STATUS_CANON={"catalogo":"Catalogo","solo polizze":"Solo Polizze","hard closure":"Hard closure","soft closure":"Soft closure",
+  "full closure":"Full closure","pir":"PIR","etf censito":"Etf censito","nuovo etf censito":"Nuovo Etf censito","temp":"Temp"};
+function statusNorm(v){ const s=cleanStr(v); if(s==null) return null; const k=s.replace(/\s+/g," ").toLowerCase(); return STATUS_CANON[k]||s.replace(/\s+/g," "); }
 function ynV(v){ const s=cleanStr(v); if(s==null) return null; return /^(y|yes|s|si|sì)/i.test(s)?1:0; }
 
 const PREMIUM_SCHEMA=["i","n","statusB","statusC","grp","dom","tipo","etfAtt","leva","repl","cat","sub","msCat","bench",
@@ -231,14 +234,26 @@ const PREMIUM_SCHEMA=["i","n","statusB","statusC","grp","dom","tipo","etfAtt","l
   "sCyc","sDef","sSen","rDev","rEmg","rAme","rEuD","ricUS","ricEU","bDev","bEmg","bGov","bIta","bCorp","bIG","bSG",
   "fxEur","fxUsd","effic"];
 
-function transformPremium(aoa){
+function transformPremium(aoa,vDate){
   const data=aoa.slice(2).filter(r=>r&&r[3]);   // riga0=intestazioni raggruppate, riga1=header colonne, dati da riga2; ISIN in colonna D (idx 3)
   const dictFields=["grp","dom","tipo","repl","cat","sub","msCat","divBase","divPort","covMod","distT","distF","effic","statusB","statusC"];
   const dicts={}; dictFields.forEach(k=>dicts[k]=[]);
-  const dref=(k,v)=>{ v=cleanStr(v); if(v==null) return null; let i=dicts[k].indexOf(v); if(i===-1){ i=dicts[k].length; dicts[k].push(v); } return i; };
-  const seen=new Set(); const rows=[];
-  data.forEach(r=>{
-    const isin=cleanStr(r[3]); if(!isin||seen.has(isin)) return; seen.add(isin);
+  const dref=(k,v)=>{ v=(k==="statusB")?statusNorm(v):cleanStr(v); if(v==null) return null; let i=dicts[k].indexOf(v); if(i===-1){ i=dicts[k].length; dicts[k].push(v); } return i; };
+  // ISIN presenti due volte (es. ETF sia "Etf censito" sia "Solo Polizze"): una sola riga per ISIN.
+  // Prevale la riga "Etf censito"/"Nuovo Etf censito" (negoziabile); i campi vuoti (es. colonna B, Poste Vita) si completano dalle altre righe.
+  const grouped=new Map();
+  data.forEach(r=>{ const isin=cleanStr(r[3]); if(!isin) return; if(!grouped.has(isin)) grouped.set(isin,[]); grouped.get(isin).push(r); });
+  const merged=[];
+  grouped.forEach(list=>{
+    if(list.length===1){ merged.push(list[0]); return; }
+    const pick=list.find(x=>/etf censito/i.test(cleanStr(x[0])||""))||list[0];
+    const out=pick.slice();
+    list.forEach(x=>{ if(x===pick) return; for(let c=0;c<out.length;c++){ if((out[c]==null||out[c]==="")&&x[c]!=null&&x[c]!=="") out[c]=x[c]; } });
+    merged.push(out);
+  });
+  const rows=[];
+  merged.forEach(r=>{
+    const isin=cleanStr(r[3]);
     const covS=cleanStr(r[16]); const cov= covS==null?null:(/part/i.test(covS)?2:1);
     rows.push([
       isin, cleanStr(r[2])||isin,
@@ -265,7 +280,7 @@ function transformPremium(aoa){
       dref("effic",r[83])
     ]);
   });
-  const v=new Date().toISOString().slice(0,10);
+  const v=(vDate&&/^\d{4}-\d{2}-\d{2}$/.test(vDate))?vDate:new Date().toISOString().slice(0,10);   // data di riferimento = data nel nome del foglio (es. "2026-10-20 TA Fondi, Etf"), altrimenti data odierna
   return {v,schema:PREMIUM_SCHEMA,dicts,rows,n:rows.length,_n:rows.length};
 }
 async function parseXlsxPremium(ab){
@@ -301,7 +316,7 @@ async function parseXlsxPremium(ab){
     const max=Math.max(-1,...Object.keys(cells).map(Number)); const arr=new Array(max+1).fill(null);
     for(const k in cells) arr[+k]=cells[k]; aoa[ri]=arr;
   }
-  return transformPremium(aoa);
+  const dm=/^(\d{4}-\d{2}-\d{2})/.exec(chosen.name||""); return transformPremium(aoa,dm?dm[1]:null);
 }
 const excelDate=n=>new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000);
 
