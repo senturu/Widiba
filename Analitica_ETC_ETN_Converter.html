@@ -111,7 +111,9 @@ function yearOfV(v){ if(typeof v==="number"&&v>20000&&v<60000) return excelDateV
   const s=cleanStr2(v); if(!s) return null; const m=s.match(/\b(19|20)\d{2}\b/); return m?+m[0]:null; }
 function dateIsoV(v){ if(typeof v==="number"&&v>20000&&v<60000) return excelDateV(v).toISOString().slice(0,10); return null; }
 function ynV2(v){ const s=cleanStr2(v); if(s==null) return null; return /^(y|yes|s|si|s\u00ec)/i.test(s)?1:0; }
-function transformEtcEtn(aoa){
+const STATUS_CANON_E={"etc/etn censito":"Etc/Etn censito","nuovo etc/etn censito":"Nuovo Etc/Etn censito"};
+function statusNormE(v){ const s=cleanStr2(v); if(s==null) return null; const k=s.replace(/\s+/g," ").toLowerCase(); return STATUS_CANON_E[k]||s.replace(/\s+/g," "); }
+function transformEtcEtn(aoa,vDate){
   const data=aoa.slice(2).filter(r=>r&&r[ETC_COL.isin]);
   const DICT_FIELDS=["status","emittente","domicilio","tipo","repl","cat","sub","msCat","divPort","divBase","covMod","distT","distF"];
   const dicts={}; DICT_FIELDS.forEach(k=>dicts[k]=[]);
@@ -122,7 +124,7 @@ function transformEtcEtn(aoa){
     const covS=cleanStr2(r[ETC_COL.cov]); const cov=covS==null?null:(/part/i.test(covS)?2:1);
     rows.push([
       isin, cleanStr2(r[ETC_COL.nome])||isin,
-      dref("status",r[ETC_COL.status]), dref("emittente",r[ETC_COL.emittente]), dref("domicilio",r[ETC_COL.domicilio]),
+      dref("status",statusNormE(r[ETC_COL.status])), dref("emittente",r[ETC_COL.emittente]), dref("domicilio",r[ETC_COL.domicilio]),
       dref("tipo",r[ETC_COL.tipo]), ynV2(r[ETC_COL.leva]), dref("repl",r[ETC_COL.repl]),
       dref("cat",r[ETC_COL.cat]), dref("sub",r[ETC_COL.sub]), dref("msCat",r[ETC_COL.msCat]), cleanStr2(r[ETC_COL.bench]),
       dref("divPort",r[ETC_COL.divPort]), dref("divBase",r[ETC_COL.divBase]), cov, dref("covMod",r[ETC_COL.covMod]),
@@ -140,7 +142,7 @@ function transformEtcEtn(aoa){
       rank10v(r[ETC_COL.spread]), rank10v(r[ETC_COL.var]),
     ]);
   });
-  const v=new Date().toISOString().slice(0,10);
+  const v=(vDate&&/^\d{4}-\d{2}-\d{2}$/.test(vDate))?vDate:new Date().toISOString().slice(0,10);   // data = data nel nome del foglio (es. "2026-10-20 TA Etc, Etn"), altrimenti oggi
   return {v,schema:ETC_SCHEMA,dicts,rows,n:rows.length,_n:rows.length};
 }
 async function parseXlsxEtcEtn(ab){
@@ -176,7 +178,7 @@ async function parseXlsxEtcEtn(ab){
     const max=Math.max(-1,...Object.keys(cells).map(Number)); const arr=new Array(max+1).fill(null);
     for(const k in cells) arr[+k]=cells[k]; aoa[ri]=arr;
   }
-  return transformEtcEtn(aoa);
+  const dm=/^(\d{4}-\d{2}-\d{2})/.exec(chosen.name||""); return transformEtcEtn(aoa,dm?dm[1]:null);
 }
 function parseCSV(text){
   if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);   // rimuove BOM
