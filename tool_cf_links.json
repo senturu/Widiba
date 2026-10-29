@@ -1,5 +1,5 @@
 {
-  "generato": "2026-10-26",
+  "generato": "2026-10-29",
   "links": {
     "sinottica": {
       "tool": "https://senturu.github.io/Widiba/Sinottica_302_Interno.html",
@@ -18,7 +18,7 @@
       "converter": "https://senturu.github.io/Widiba/Analitica_Bond_Converter_130.html"
     },
     "azioni": {
-      "tool": "https://senturu.github.io/Widiba/Analitica_Azioni_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Analitica_Azioni_17_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Analitica_Azioni_Converter.html"
     },
     "focus": {
