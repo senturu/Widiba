@@ -73,7 +73,10 @@ const FONTS={"WidibaLight": "AAEAAAANAIAAAwBQR1BPU6sNX+QAAEzsAAAqfkdTVUIAGQAMAAB
 const SCHEMA=["i","n","yr","naz","set","sub","dtr","dp","cap","beta","dy","pe","pb","pcf","ps","dev","deb","peg","eps","pz","pmin","pmax","r1","r3"];
 const DICT_FIELDS=["naz","set","sub","dtr","dp"];
 const NUMK=["cap","beta","dy","pe","pb","pcf","ps","dev","deb","peg","eps","pz","pmin","pmax","r1","r3"];
-const DATA_VER="2026-05-14";
+let SRC_DATE=null; // data del dataset, ricavata dal nome del foglio o del file (mai fissa nel codice)
+function isoFrom(txt){ if(!txt)return null; let m=String(txt).match(/(20\d{2})[-_.](\d{2})[-_.](\d{2})/); if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+  m=String(txt).match(/(\d{2})[-_.](\d{2})[-_.](20\d{2})/); if(m)return `${m[3]}-${m[2]}-${m[1]}`; return null; }
+function dataVer(){ if(SRC_DATE)return SRC_DATE; const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 
 /* --- iniezione font --- */
 (function(){ let css="";
@@ -154,7 +157,7 @@ function buildCatalog(rows){
     out.push(SCHEMA.map(k=>o[k]!==undefined?o[k]:null));
   }
   const recognized=Object.keys(map).filter(k=>map[k]>=0);
-  return {json:{v:DATA_VER,schema:SCHEMA,dicts,rows:out}, stats:{count:out.length,skipped,recognized,map,dicts:Object.fromEntries(DICT_FIELDS.map(k=>[k,dicts[k].length]))}};
+  return {json:{v:dataVer(),schema:SCHEMA,dicts,rows:out}, stats:{count:out.length,skipped,recognized,map,dicts:Object.fromEntries(DICT_FIELDS.map(k=>[k,dicts[k].length]))}};
 }
 
 /* --- parser CSV nativo (gestisce virgolette, ; o , o tab) --- */
@@ -205,6 +208,8 @@ async function readXLSX(buf){
   if(ssXml){ const re=/<si>([\s\S]*?)<\/si>/g; let m;
     while((m=re.exec(ssXml))){ const t=[...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x=>x[1]).join("");
       shared.push(unesc(t)); } }
+  // data del dataset dal nome del primo foglio (es. "2026-10-29 TA Azioni")
+  try{ const wb=await extract("xl/workbook.xml"); if(wb){ const mm=wb.match(/<sheet [^>]*name="([^"]*)"/); if(mm){ const d=isoFrom(unesc(mm[1])); if(d)SRC_DATE=d; } } }catch(e){}
   // primo sheet: risolvi via workbook rels, fallback sheet1.xml
   let sheetPath="xl/worksheets/sheet1.xml";
   if(!entries[sheetPath]){ const k=Object.keys(entries).find(x=>/xl\/worksheets\/sheet\d+\.xml$/.test(x)); if(k)sheetPath=k; }
@@ -238,12 +243,13 @@ function msgErr(t){ return `<div class="msg err">${t}</div>`; }
 async function handleFile(file){
   show(`<div class="msg" style="background:#fff;border:1px solid var(--hair)">Elaborazione di <b>${file.name}</b>…</div>`);
   try{
-    let rows;
+    let rows; SRC_DATE=null;
     const name=file.name.toLowerCase();
     if(name.endsWith(".xlsx")){ rows=await readXLSX(await file.arrayBuffer()); }
     else if(name.endsWith(".csv")||name.endsWith(".tsv")){ rows=parseCSV(await file.text()); }
     else throw new Error("Formato non supportato: usa .xlsx o .csv");
     if(!rows||rows.length<2)throw new Error("Il file non contiene righe di dati");
+    if(!SRC_DATE)SRC_DATE=isoFrom(file.name);
     const {json,stats}=buildCatalog(rows);
     lastJson=json;
     renderResult(file.name,stats);
