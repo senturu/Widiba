@@ -59,7 +59,7 @@ input[type=file]{display:none}
 
   <div class="card">
     <div class="filetto"></div>
-    <h2>2 · Tabella Analitica Fondi / ETF (dati premium)</h2>
+    <h2>2 · Tabella Analitica Fondi / ETF (Dati+)</h2>
     <p>Il file con le informazioni aggiuntive (costi correnti, performance in euro, ranking di rischio, correlazioni, asset allocation, efficienza) e con gli ETF censiti. Accetta solo <b>.xlsx</b> originale (fogli "TA Fondi, Etf" + "Legenda").</p>
     <input type="file" id="premFile" accept=".xlsx" onchange="onPickPremium(this)">
     <button class="btn magenta" onclick="document.getElementById('premFile').click()">Scegli file Fondi/ETF</button>
@@ -213,7 +213,7 @@ function parseCSV(text){
 }
 async function parseCsvSinottica(text){ return transformAOA(parseCSV(text), 1); }
 
-/* ============ parser Tabella Analitica Fondi/ETF (dataset premium, 84 colonne) ============ */
+/* ============ parser Tabella Analitica Fondi/ETF (dataset Dati+, 84 colonne) ============ */
 function cleanStr(v){ if(v==null) return null; let s=(""+v).trim(); if(s===""||["nan","n/a","nd","na","none","not applicable","-"].includes(s.toLowerCase())) return null; return s; }
 function numV(v,r){ if(r==null)r=4; if(v==null||v==="") return null; let n;
   if(typeof v==="number"){ n=v; } else { let s=(""+v).trim().replace(/\s/g,"").replace(",", "."); n=parseFloat(s); if(isNaN(n)) return null; }

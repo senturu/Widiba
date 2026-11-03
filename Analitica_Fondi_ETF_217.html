@@ -318,7 +318,7 @@ table.cmp td.worst{color:var(--neg)}
   a[href]:after{content:""!important}
 }
 
-/* ===== v2.17 · stato (colonna A Analitica) in evidenza + dati premium completi ===== */
+/* ===== v2.17 · stato (colonna A Analitica) in evidenza + Dati+ completi ===== */
 .statusb.st-ok{color:var(--pos);border-color:var(--pos)}
 .statusb.st-pol{color:var(--flessibile);border-color:var(--flessibile);border-style:dotted}
 .statusb.st-pir{color:var(--liquidita);border-color:var(--liquidita)}
@@ -459,7 +459,7 @@ const DB2_RAW={"v":"2026-10-20","schema":["i","n","statusB","statusC","grp","dom
 const APP_VER="2.17";   // versione applicazione (visibile in barra, dati e report)
 const APP_NAME="Analitica Fondi e ETF";
 const DEFAULT_LOCAL_SRC="catalogo.json";        // Sinottica fondi (aggiornamento indipendente)
-const DEFAULT_LOCAL_SRC2="catalogo_analitica.json"; // dataset premium fondi+ETF (aggiornamento indipendente, asincrono rispetto al primo)
+const DEFAULT_LOCAL_SRC2="catalogo_analitica.json"; // dataset Dati+ fondi+ETF (aggiornamento indipendente, asincrono rispetto al primo)
 /* Disclaimer ufficiale ad uso interno — riportato nei report generati */
 const DISCLAIMER_TITLE="Documento ad uso interno";
 const DISCLAIMER=[
@@ -528,13 +528,13 @@ function indexDB(db){
 function gv(row,key){ return row[DB.idx[key]]; }
 function dictv(row,key){ const c=row[DB.idx[key]]; return c==null?null:DB.dicts[key][c]; }
 
-/* ============ merge dataset premium (fondi arricchiti + ETF) ============
+/* ============ merge dataset Dati+ (fondi arricchiti + ETF) ============
    Il catalogo_analitica.json (DB2) viaggia su un file separato, con auto-update
    indipendente rispetto a catalogo.json (DB). A ogni caricamento/aggiornamento
    di uno dei due, si ricostruisce da zero un DB "unito":
-   - i fondi già presenti in Sinottica vengono arricchiti con i campi pXxx (badge PREMIUM)
+   - i fondi già presenti in Sinottica vengono arricchiti con i campi pXxx (badge DATI+)
    - gli ETF assenti da Sinottica vengono aggiunti come nuove righe sintetiche,
-     costruite interamente dal dataset premium (badge PREMIUM sempre attivo). */
+     costruite interamente dal dataset Dati+ (badge DATI+ sempre attivo). */
 const PLUS_FIELDS=["strumento","hasPlus","pCosti","pP1yB","pP1y","pP3y","pP5y","pEffic","pDom","pCat","pSub","pMsCat",
  "pAum","pVarR","pSh3","pSh1","pSd3","pSd1","pDd3","pDd1","pTop10","pAaEq","pAaBd","pAaCs","pAaOt","pAaCm",
  "pRatMS","pSpread","pEtfAtt","pLeva","pRepl","pNav","pNavD","pDivNav","pBench","pWl","pGrp","pDivBase","pDivPort","pCov","pP1yB","p2","pStA","pStB"];
@@ -635,7 +635,7 @@ const FLD={varr:"var",sharpe1y:"sharpe1y",ir1y:"ir1y",alpha1y:"alpha1y",maxdd:"m
   vol1y:"vol1y",vol3y:"vol3y",sharpe3y:"sharpe3y",tev1y:"tev1y",p1m:"p1m",p3m:"p3m",p6m:"p6m",ratingFZ:"ratingFZ",omdP:"omdP",distR1y:"distR1y",annoCat:"anno"};
 const RNG_NEW=["vol1y","vol3y","sharpe3y","tev1y","p1m","p3m","p6m","ratingFZ","omdP","distR1y","annoCat"];
 let _covCache={};
-let P2=null, _stU=null;      // P2 = mappa campi/dizionari del dataset premium; _stU = cache stati
+let P2=null, _stU=null;      // P2 = mappa campi/dizionari del dataset Dati+; _stU = cache stati
 function fieldCoverage(field){
   if(field in _covCache) return _covCache[field];
   const I=DB.idx[field]; let n=0;
@@ -865,7 +865,7 @@ function updateVerPill(){
   const off=!navigator.onLine;
   const av=document.getElementById("appver"); if(av) av.textContent="v"+APP_VER;
   const p=document.getElementById("verpill"); p.classList.toggle("off",off);
-  const plusTxt=DB._plusV?(" · premium "+fmtDate(DB._plusV)):"";
+  const plusTxt=DB._plusV?(" · Dati+ "+fmtDate(DB._plusV)):"";
   document.getElementById("vertext").textContent=(off?"offline · ":"")+"agg. "+fmtDate(DB.v)+plusTxt;
 }
 
@@ -955,7 +955,7 @@ function applyFilters(){
 }
 /* valore usato per l'ordinamento: gestisce payTot (derivato = upfront+continuing) e i campi indicizzati */
 /* Performance: la Sinottica ha la priorità quando il dato è presente in entrambi i dataset
-   (mediamente più aggiornata); il dataset premium viene usato solo come fallback quando
+   (mediamente più aggiornata); il dataset Dati+ viene usato solo come fallback quando
    la Sinottica non ha il valore (tipico per gli ETF, assenti da Sinottica). */
 function eff1y(r){ const n=r[DB.idx.p1y]; return n!=null?n:r[DB.idx.pP1y]; }
 function eff3y(r){ const n=r[DB.idx.p3y]; return n!=null?n:r[DB.idx.pP3y]; }
@@ -1059,7 +1059,7 @@ function renderList(){
     h+=`<div class="card ${sel?'sel':''}${stCardCls(r)}" onclick="openDetail('${isin}')">
       <div class="acc ${isEtf?'etf':''}" style="${isEtf?'border-left-color':'background'}:${CATCOL[macro]||'var(--altro)'}"></div>
       <div class="body">
-        ${hasPlus?`<span class="badgePlus" title="Dati premium disponibili">★ PREMIUM</span>`:""}
+        ${hasPlus?`<span class="badgePlus" title="Dati+ disponibili">DATI+</span>`:""}
         <div class="cname">${stNameTag(r)}${esc(r[I.nome]||isin)}</div>
         <div class="csub">${esc(dictv(r,"casa")||"")} · ${esc(dictv(r,"wise")||"")}${domFlag?` · ${domFlag} ${esc(r[I.pDom])}`:""}</div>
         <div class="idrow">${isinChip(isin)}${statusBadge(r)}</div>
@@ -1104,8 +1104,8 @@ function buildQuickChips(){
   h+=`<button class="chip stchip-hard" id="stHard" onclick="quickStatus('Hard closure')">Hard closure</button>`;
   h+=`<button class="chip" id="strFondi" onclick="quickStrumento('Fondo')">Fondi</button>`;
   h+=`<button class="chip" id="strEtf" onclick="quickStrumento('ETF')">ETF</button>`;
-  h+=`<button class="chip" id="premChip" onclick="quickPremium('y')">★ Premium</button>`;
-  h+=`<button class="chip" id="nonPremChip" onclick="quickPremium('n')">Non Premium</button>`;
+  h+=`<button class="chip" id="premChip" onclick="quickPremium('y')">Dati+</button>`;
+  h+=`<button class="chip" id="nonPremChip" onclick="quickPremium('n')">Senza Dati+</button>`;
   macros.forEach(m=>{ h+=`<button class="chip macro" data-m="${m}" onclick="quickMacro('${m}')">${m}</button>`; });
   h+=`<button class="chip" onclick="quickSort('payTot')">Pay-out alto</button>`;
   h+=`<button class="chip" onclick="quickSort('sharpe1y')">Miglior Sharpe</button>`;
@@ -1170,7 +1170,7 @@ function goto(v){
 
 /* ============ detail sheet ============ */
 let curDetail=null;
-function rankBar(label,val,invert,neutral){       // barra a 10 tacche per i ranking 1-10 del dataset premium
+function rankBar(label,val,invert,neutral){       // barra a 10 tacche per i ranking 1-10 del dataset Dati+
   if(val==null) return `<div class="pb rank"><span class="pl">${label}</span><div class="tiny" style="flex:1;color:var(--ink2)">n.d.</div></div>`;
   const good=invert?(11-val):val;         // per VaR/rischio: 1=migliore, quindi si inverte il colore
   const col=neutral?"var(--blu)":(good>=7?"var(--pos)":(good>=4?"var(--bilanciato)":"var(--neg)"));
@@ -1219,7 +1219,7 @@ function premiumExtraHtml(r){
     return `<details class="prx-d"><summary>${title}</summary><div class="perfbars">${keys.map(([k,l])=>rankBar(l,nv(k),false,true)).join("")}</div>${note?`<div class="tiny" style="padding:0 2px 10px;color:var(--ink2)">${note}</div>`:""}</details>`;
   };
   const cov=nv("cov"), covMod=nv("covMod"), leva=nv("leva");
-  let h=`<div class="tiny prx-t">Anagrafica, copertura e distribuzione (premium)</div><div class="grid2">
+  let h=`<div class="tiny prx-t">Anagrafica, copertura e distribuzione (Dati+)</div><div class="grid2">
     ${cell("Stato · colonna A",esc(stEff(r)))}
     ${cell("Unit Linked / Polizze · colonna B",esc(r[I.pStB]||"—"))}
     ${cell("Tipologia strumento",esc(nv("tipo")||"—"))}${cell("Anno di lancio",nv("anno")||"—")}
@@ -1241,8 +1241,8 @@ function premiumExtraHtml(r){
 /* ---- filtri v2.17: stato (colonna A), liste premium, ranking 1-10, range aggiuntivi ---- */
 const PX_DEFS=[
  {k:"stB",l:"Unit Linked / Polizze (colonna B Analitica)"},
- {k:"pSub",l:"Sotto categoria (premium)",search:1},{k:"pMsCat",l:"Categoria Morningstar (premium)",search:1},
- {k:"pGrp",l:"Gruppo (premium)",search:1},{k:"pRepl",l:"Metodo di replica (ETF)"},
+ {k:"pSub",l:"Sotto categoria (Dati+)",search:1},{k:"pMsCat",l:"Categoria Morningstar (Dati+)",search:1},
+ {k:"pGrp",l:"Gruppo (Dati+)",search:1},{k:"pRepl",l:"Metodo di replica (ETF)"},
  {k:"pDivBase",l:"Divisa base"},{k:"pDivPort",l:"Divisa del portafoglio"},
  {k:"covMod",l:"Copertura valutaria verso"},{k:"distT",l:"Tipologia distribuzione proventi"},{k:"distF",l:"Tempistiche distribuzione proventi"},
  {k:"gamma",l:"Gamma / SICAV",search:1}
@@ -1304,9 +1304,9 @@ function openDetail(isin){
   const cell=(k,v)=>`<div class="cell"><div class="k">${k}</div><div class="v">${v}</div></div>`;
   const perfRow=(lbl,v,fromPremium)=>{ const m=20; const w=v==null?0:Math.min(100,Math.abs(v)/m*50); const col=v>0?"var(--pos)":"var(--neg)";
     const left=v>0?"50%":(50-w)+"%";
-    return `<div class="pb"><span class="pl">${lbl}${fromPremium?'<span style="color:var(--magenta)">★</span>':''}</span><div class="bar"><i style="left:${left};width:${w}%;background:${col}"></i></div><span class="pv ${clsDelta(v)}">${pct(v)}</span></div>`; };
+    return `<div class="pb"><span class="pl">${lbl}${fromPremium?'<span style="color:var(--magenta)">+</span>':''}</span><div class="bar"><i style="left:${left};width:${w}%;background:${col}"></i></div><span class="pv ${clsDelta(v)}">${pct(v)}</span></div>`; };
   let h=`<div class="dt-head">
-      ${hasPlus?`<span class="badgePlus" style="margin-bottom:6px">★ PREMIUM · dati premium disponibili</span>`:""}
+      ${hasPlus?`<span class="badgePlus" style="margin-bottom:6px">DATI+ · dati aggiuntivi disponibili</span>`:""}
       ${stBanner(r)}
       <div class="dt-name">${esc(r[I.nome]||isin)}</div>
       <div class="dt-isin"><span onclick="copyIsin('${escq(isin)}',event)" style="cursor:pointer;border-bottom:1px dotted var(--grigio)">${esc(isin)}</span> · classe ${esc(dictv(r,"classe")||"—")} <span class="tiny" style="opacity:.7">(tocca l'ISIN per copiarlo)</span></div>
@@ -1322,12 +1322,12 @@ function openDetail(isin){
         ${r[I.estDate]?`<span class="tag" style="background:var(--blu);color:#fff">Estinto ${esc(r[I.estDate])}</span>`:(dictv(r,"status")==="Estinto"?`<span class="tag" style="background:var(--blu);color:#fff">Estinto</span>`:"")}
       </div></div>`;
   const v1y=eff1y(r), v3y=eff3y(r), v5y=eff5y(r);
-  // stellina = il valore mostrato viene dal dataset premium perché la Sinottica non ha il dato (es. ETF)
+  // stellina = il valore mostrato viene dal dataset Dati+ perché la Sinottica non ha il dato (es. ETF)
   const src1=hasPlus&&r[I.p1y]==null&&r[I.pP1y]!=null, src3=hasPlus&&r[I.p3y]==null&&r[I.pP3y]!=null, src5=hasPlus&&r[I.p5y]==null&&r[I.pP5y]!=null;
   h+=`<div class="block"><div class="bh">Performance</div><div class="perfbars">
       ${perfRow("1M",r[I.p1m])}${perfRow("3M",r[I.p3m])}${perfRow("6M",r[I.p6m])}
       ${perfRow("1A",v1y,src1)}${perfRow("3A",v3y,src3)}${perfRow("5A",v5y,src5)}</div>
-      ${(src1||src3||src5)?`<div class="tiny" style="margin-top:6px;color:var(--magenta)">★ = dato dal dataset premium (nessun valore Sinottica disponibile per questo strumento, tipico per gli ETF)</div>`:""}</div>`;
+      ${(src1||src3||src5)?`<div class="tiny" style="margin-top:6px;color:var(--magenta)">+ = dato da Dati+ (nessun valore Sinottica disponibile per questo strumento, tipico per gli ETF)</div>`:""}</div>`;
   h+=`<div class="block"><div class="bh">Pay-out · base provvigioni</div><div class="grid2">
       ${cell("Upfront (sottoscr.)",pctp(r[I.payUp]))}${cell("Continuing (gest.+distr.)",pctp(r[I.payCont]))}</div></div>`;
   const gdTot=(r[I.commGD]!=null)?r[I.commGD]:((r[I.commGest]!=null||r[I.commDist]!=null)?((r[I.commGest]||0)+(r[I.commDist]||0)):null);
@@ -1336,10 +1336,10 @@ function openDetail(isin){
       ${cell("Comm. gestione",pctp(r[I.commGest]))}${cell("Comm. distribuzione",pctp(r[I.commDist]))}
       ${cell("Comm. gestione+distrib. (tot)",'<span style="color:var(--magenta)">'+pctp(gdTot)+'</span>')}${cell("Min. versam. iniziale",r[I.minIniz]!=null?eur(r[I.minIniz]):"—")}
       ${cell("Rating Wise (FZ)",r[I.ratingFZ]!=null?r[I.ratingFZ]+"/10":"—")}
-      ${hasPlus?cell("Costi correnti (dati premium)",'<span style="color:var(--magenta)">'+pctp(r[I.pCosti])+'</span>'):""}</div></div>`;
+      ${hasPlus?cell("Costi correnti (Dati+)",'<span style="color:var(--magenta)">'+pctp(r[I.pCosti])+'</span>'):""}</div></div>`;
   const riskCell=(label,nativeVal,fmtFn,rankVal)=>{
     if(nativeVal!=null) return cell(label,fmtFn(nativeVal));
-    if(hasPlus && rankVal!=null) return cell(label,'<span style="color:var(--magenta)">'+rankVal+'/10</span> <span class="tiny" style="color:var(--ink2)">(rank premium)</span>');
+    if(hasPlus && rankVal!=null) return cell(label,'<span style="color:var(--magenta)">'+rankVal+'/10</span> <span class="tiny" style="color:var(--ink2)">(rank Dati+)</span>');
     return cell(label,"—");
   };
   h+=`<div class="block"><div class="bh">Rischio / efficienza</div><div class="grid2">
@@ -1349,10 +1349,10 @@ function openDetail(isin){
       ${cell("Tracking Error 1A",num2(r[I.tev1y]))}${riskCell("Max Drawdown",r[I.maxdd],v=>pctp(v,1),r[I.pDd3])}
       ${cell("Recovery",r[I.recov]!=null?r[I.recov]+" gg":"—")}${riskCell("VaR"+(DB.varEst&&DB.idx.var!=null?" (stima)":""),(DB.idx.var!=null?r[I.var]:null),v=>pctp(v),r[I.pVarR])}
       ${cell("Classe rischio",risk||"—")}${cell("Rating ESG",r[I.esg]!=null?r[I.esg]:"—")}</div>
-      ${hasPlus?`<div class="tiny" style="margin-top:6px;color:var(--ink2)">I valori "rank premium" sono ranking 1-10 rispetto all'universo fondi/ETF censiti (10=migliore), non valori assoluti — vedi anche la sezione Dati premium più sotto per il dettaglio completo.</div>`:""}</div>`;
+      ${hasPlus?`<div class="tiny" style="margin-top:6px;color:var(--ink2)">I valori "rank Dati+" sono ranking 1-10 rispetto all'universo fondi/ETF censiti (10=migliore), non valori assoluti — vedi anche la sezione Dati+ più sotto per il dettaglio completo.</div>`:""}</div>`;
   if(hasPlus){
     h+=`<div class="block" style="border:1px solid var(--magenta);border-radius:14px">
-      <div class="bh" style="color:var(--magenta)">★ Dati premium</div>
+      <div class="bh" style="color:var(--magenta)">Dati+</div>
       <div class="grid2">
       ${cell("Categoria",esc(r[I.pCat]||"—"))}${cell("Sotto categoria",esc(r[I.pSub]||"—"))}
       ${cell("Categoria Morningstar",esc(r[I.pMsCat]||"—"))}${cell("Domicilio",domFlag?domFlag+" "+esc(r[I.pDom]):"—")}
@@ -1433,14 +1433,14 @@ function openFilters(){
   const distrib=d.distrib.slice();
   const statuses=d.status.slice();
   let h="";
-  // — Fondi vs ETF · dati premium —
-  h+=fsection("Fondi vs ETF · dati premium");
+  // — Fondi vs ETF · Dati+ —
+  h+=fsection("Fondi vs ETF · Dati+");
   h+=fgroup("Tipo di strumento",`<div class="opts">${optSet("strumento",f.strumento,["Fondo","ETF"])}</div>`);
-  h+=fgroup("Dati premium",seg3("premiumFilter","Filtra per presenza dei dati premium (costi correnti, performance EUR, ranking di rischio, ecc.).",true));
-  h+=fgroup("Categoria (dati premium)",`<div class="opts">${optSet("pCat",f.pCat,PLUSDB.dicts.cat.slice())}</div>`);
+  h+=fgroup("Dati+",seg3("premiumFilter","Filtra per presenza dei Dati+ (costi correnti, performance EUR, ranking di rischio, ecc.).",true));
+  h+=fgroup("Categoria (Dati+)",`<div class="opts">${optSet("pCat",f.pCat,PLUSDB.dicts.cat.slice())}</div>`);
   h+=fgroup("Domicilio",`<div class="opts">${optSet("pDom",f.pDom,PLUSDB.dicts.dom.slice().sort())}</div>`);
   h+=fgroup("Efficienza (solo fondi in collocamento diretto)",`<div class="opts">${[["EFFICIENTE","Efficiente"],["PARZIALMENTE_EFFICIENTE","Parzialmente efficiente"],["NON_EFFICIENTE","Non efficiente"]].map(([v,l])=>`<button class="opt ${f.pEffic.includes(v)?'on':''}" onclick="togF('pEffic','${v}',this)">${l}</button>`).join("")}</div>`);
-  h+=fgroup("Costi correnti (dati premium)",rangeCtl("pCosti",0,4,0.1,f.pCosti,"%"));
+  h+=fgroup("Costi correnti (Dati+)",rangeCtl("pCosti",0,4,0.1,f.pCosti,"%"));
 
   // — Categoria —
   h+=fsection("Categoria");
@@ -1484,14 +1484,14 @@ function openFilters(){
   h+=fgroup("Pay-out continuing",rangeCtl("payCont",0,4,0.1,f.payCont,"%"));
   h+=fgroup("Commissioni di distribuzione retrocesse",seg3("commDistr","Con / senza quota continuing (gestione + distribuzione) retrocessa alla rete.",true));
 
-  // — Dati premium: anagrafica, distribuzione, ranking (v2.17) —
-  h+=fsection("Dati premium · anagrafica e distribuzione");
+  // — Dati+: anagrafica, distribuzione, ranking (v2.17) —
+  h+=fsection("Dati+ · anagrafica e distribuzione");
   PX_DEFS.filter(d=>d.k!=="gamma").forEach(d=>{ h+=pxGroupHTML(d); });
   h+=fgroup("ETF a gestione attiva",seg3("pAtt","Solo ETF con dato di gestione attiva (Sì/No).",true));
   h+=fgroup("Strategia a leva",seg3("pLeva","",true));
-  h+=fgroup("Anno di lancio (premium)",rangeCtl("pAnno",1990,2026,1,f.pAnno,""));
+  h+=fgroup("Anno di lancio (Dati+)",rangeCtl("pAnno",1990,2026,1,f.pAnno,""));
   h+=fgroup("% titoli White List",rangeCtl("pWl",0,100,5,f.pWl,"%"));
-  h+=fsection("Dati premium · ranking 1-10");
+  h+=fsection("Dati+ · ranking 1-10");
   h+=rkGroupsHTML();
 
   // — Anagrafica / stato —
@@ -1586,18 +1586,18 @@ const SORTS=[
   {k:"payUp",label:"Pay-out upfront",short:"Pay"},
   {k:"payCont",label:"Pay-out continuing",short:"PayC"},{k:"sharpe1y",label:"Sharpe 1 anno",short:"Sharpe"},
   {k:"vol1y",label:"Volatilità 1 anno",short:"Vol"},{k:"maxdd",label:"Max Drawdown",short:"MaxDD"},
-  {k:"ratingMS",label:"Rating Morningstar",short:"★"},
+  {k:"ratingMS",label:"Rating Morningstar",short:"+"},
   {k:"commGD",label:"Comm. gestione+distrib. (tot)",short:"C.G+D"},
   {k:"commGest",label:"Comm. gestione",short:"C.Gest"},
   {k:"commDist",label:"Comm. distribuzione",short:"C.Distr"},
   {k:"commSott",label:"Comm. sottoscrizione",short:"C.Sott"},
   {k:"commRimb",label:"Comm. rimborso",short:"C.Rimb"},
-  {k:"pCosti",label:"Costi correnti (dati premium)",short:"Costi★"},
-  {k:"pP1y",label:"Performance 1A EUR (dati premium)",short:"1Y EUR★"},
-  {k:"pP3y",label:"Performance 3A EUR (dati premium)",short:"3Y EUR★"},
-  {k:"pP5y",label:"Performance 5A EUR (dati premium)",short:"5Y EUR★"},
-  {k:"pSh3",label:"Sharpe 3A · rank 1-10 (dati premium)",short:"Sharpe★"},
-  {k:"pVarR",label:"VaR · rank 1-10, 1=migliore (dati premium)",short:"VaR★"},
+  {k:"pCosti",label:"Costi correnti (Dati+)",short:"Costi+"},
+  {k:"pP1y",label:"Performance 1A EUR (Dati+)",short:"1Y EUR+"},
+  {k:"pP3y",label:"Performance 3A EUR (Dati+)",short:"3Y EUR+"},
+  {k:"pP5y",label:"Performance 5A EUR (Dati+)",short:"5Y EUR+"},
+  {k:"pSh3",label:"Sharpe 3A · rank 1-10 (Dati+)",short:"Sharpe+"},
+  {k:"pVarR",label:"VaR · rank 1-10, 1=migliore (Dati+)",short:"VaR+"},
   {k:"nome",label:"Nome (A-Z)",short:"A-Z"},{k:"casa",label:"Casa di gestione",short:"Casa"}];
 /* verso di default quando un criterio viene aggiunto: alfabetici e "costi/rischio" in crescente, il resto decrescente */
 const SORT_MIN=["vol1y","maxdd","commGest","commSott","commDist","commGD","commRimb","pCosti","pVarR"];
@@ -1939,14 +1939,14 @@ function renderSettings(){
      <div class="sd">Aggiornamento: <b>${fmtDate(FUNDDB.v)}</b><br>
      Origine: ${isStored?"aggiornata in locale":"versione installata"}${S.lastSync?` · ultima sync ${new Date(+S.lastSync).toLocaleString("it-IT")}`:""}</div>
      ${isStored?`<button class="segbtn" style="margin-top:10px" onclick="restoreSnapshot()">Ripristina versioni installate</button>`:""}</div>
-    <div class="set-row"><div class="sh">Dati premium fondi + ETF</div>
-     <div class="sd">Aggiornamento: <b>${fmtDate(PLUSDB.v)}</b> · ${DB._etfAdded?DB._etfAdded.toLocaleString("it-IT"):0} ETF integrati, ${DB.rows.filter(r=>r[DB.idx.hasPlus]===1&&r[DB.idx.strumento]==="Fondo").length.toLocaleString("it-IT")} fondi con badge PREMIUM<br>
+    <div class="set-row"><div class="sh">Dati+ fondi + ETF</div>
+     <div class="sd">Aggiornamento: <b>${fmtDate(PLUSDB.v)}</b> · ${DB._etfAdded?DB._etfAdded.toLocaleString("it-IT"):0} ETF integrati, ${DB.rows.filter(r=>r[DB.idx.hasPlus]===1&&r[DB.idx.strumento]==="Fondo").length.toLocaleString("it-IT")} fondi con badge DATI+<br>
      Origine: ${isStored2?"aggiornata in locale":"versione installata"}${S.lastSync2?` · ultima sync ${new Date(+S.lastSync2).toLocaleString("it-IT")}`:""}</div></div>
     <div class="set-row"><div class="sd">Totale in tabella: <b>${DB._n.toLocaleString("it-IT")}</b> strumenti (fondi + ETF)</div></div>
    </div>
    <div class="block"><div class="bh">Aggiornamento automatico · Fondi Sinottica</div>
     <div class="set-row"><div class="sh">Di default: nessuna configurazione richiesta</div>
-     <div class="sd">Ad ogni avvio online, l'app cerca <b>da sola</b> un file <i>${DEFAULT_LOCAL_SRC}</i> nella <b>propria stessa cartella</b> e, se più recente, lo applica <b>automaticamente</b>. Indipendente dal dataset premium qui sotto: i due file si aggiornano in modo asincrono.</div>
+     <div class="sd">Ad ogni avvio online, l'app cerca <b>da sola</b> un file <i>${DEFAULT_LOCAL_SRC}</i> nella <b>propria stessa cartella</b> e, se più recente, lo applica <b>automaticamente</b>. Indipendente dal dataset Dati+ qui sotto: i due file si aggiornano in modo asincrono.</div>
      ${S.lastSync?`<div class="tiny" style="margin-top:6px">Ultimo controllo riuscito: ${new Date(+S.lastSync).toLocaleString("it-IT")}</div>`:""}
      <button class="btn ghost" style="padding:10px;margin-top:9px" onclick="autoSync(false)">Verifica aggiornamenti ora</button>
     </div>
@@ -1957,9 +1957,9 @@ function renderSettings(){
        <button class="btn ghost" style="padding:10px" onclick="saveRemote()">Salva</button>
        <button class="btn primary" style="padding:10px" onclick="syncRemote(false)">Aggiorna ora</button></div></div>
    </div>
-   <div class="block"><div class="bh">Aggiornamento automatico · Dati premium (fondi + ETF)</div>
+   <div class="block"><div class="bh">Aggiornamento automatico · Dati+ (fondi + ETF)</div>
     <div class="set-row"><div class="sh">Di default: nessuna configurazione richiesta</div>
-     <div class="sd">L'app cerca <b>da sola</b> un file <i>${DEFAULT_LOCAL_SRC2}</i> nella propria stessa cartella e, se più recente, lo applica automaticamente. Alimenta il badge PREMIUM sui fondi e gli ETF in tabella.</div>
+     <div class="sd">L'app cerca <b>da sola</b> un file <i>${DEFAULT_LOCAL_SRC2}</i> nella propria stessa cartella e, se più recente, lo applica automaticamente. Alimenta il badge DATI+ sui fondi e gli ETF in tabella.</div>
      ${S.lastSync2?`<div class="tiny" style="margin-top:6px">Ultimo controllo riuscito: ${new Date(+S.lastSync2).toLocaleString("it-IT")}</div>`:""}
      <button class="btn ghost" style="padding:10px;margin-top:9px" onclick="autoSync2(false)">Verifica aggiornamenti ora</button>
     </div>
@@ -1972,12 +1972,12 @@ function renderSettings(){
    </div>
    <div class="block"><div class="bh">Aggiornamento manuale</div>
     <div class="set-row"><div class="sh">Carica file dal dispositivo</div>
-     <div class="sd">Seleziona la <i>Tabella_Sinottica</i> dei fondi (<b>.csv</b> o <b>.xlsx</b>) oppure un file <b>.json</b> già convertito. Per il dataset premium fondi/ETF usa il Converter dedicato. Lettori CSV/Excel incorporati: <b>funziona anche offline</b>, nessun download necessario.</div>
+     <div class="sd">Seleziona la <i>Tabella_Sinottica</i> dei fondi (<b>.csv</b> o <b>.xlsx</b>) oppure un file <b>.json</b> già convertito. Per il dataset Dati+ fondi/ETF usa il Converter dedicato. Lettori CSV/Excel incorporati: <b>funziona anche offline</b>, nessun download necessario.</div>
      <input type="file" id="xlsxFile" accept=".csv,.xlsx,.json" style="display:none" onchange="onPickXlsx(this)">
      <button class="btn dark" style="margin-top:10px" onclick="document.getElementById('xlsxFile').click()">Scegli file (.csv / .xlsx / .json)</button>
      <div id="xlsxStatus" class="tiny" style="margin-top:8px"></div></div>
-    <div class="set-row"><div class="sh">Carica dati premium (fondi + ETF)</div>
-     <div class="sd">Seleziona il <b>.json</b> generato dal Converter dedicato (dataset premium fondi + ETF).</div>
+    <div class="set-row"><div class="sh">Carica Dati+ (fondi + ETF)</div>
+     <div class="sd">Seleziona il <b>.json</b> generato dal Converter dedicato (dataset Dati+ fondi + ETF).</div>
      <input type="file" id="xlsxFile2" accept=".json" style="display:none" onchange="onPickJson2(this)">
      <button class="btn dark" style="margin-top:10px" onclick="document.getElementById('xlsxFile2').click()">Scegli file (.json)</button>
      <div id="xlsxStatus2" class="tiny" style="margin-top:8px"></div></div>
@@ -2030,26 +2030,26 @@ async function autoSync2(silent){
   if(S.remoteUrl2){ await syncRemote2(silent); return; }
   if(!navigator.onLine){ if(!silent)toast("Offline: impossibile aggiornare ora"); return; }
   try{
-    if(!silent) toast("Verifico aggiornamenti dati premium…");
+    if(!silent) toast("Verifico aggiornamenti Dati+…");
     const url=new URL(DEFAULT_LOCAL_SRC2,document.baseURI).href;
     const res=await fetch(url,{cache:"no-store"});
     if(!res.ok){ if(!silent)toast("Nessun "+DEFAULT_LOCAL_SRC2+" trovato nella cartella dell'app"); return; }
     const db=normalizeIncoming(await res.json());
-    if(db.v && PLUSDB.v && db.v<=PLUSDB.v){ if(!silent)toast("Dati premium già aggiornati"); return; }
+    if(db.v && PLUSDB.v && db.v<=PLUSDB.v){ if(!silent)toast("Dati+ già aggiornati"); return; }
     await commitDataset2(db); S.lastSync2=Date.now(); await sset("lastSync2",""+S.lastSync2);
     applyAndRender(); renderSettings(); updateVerPill();
-    if(!silent) toast("Dati premium aggiornati a "+fmtDate(db.v));
+    if(!silent) toast("Dati+ aggiornati a "+fmtDate(db.v));
   }catch(e){ if(!silent)toast("Nessun "+DEFAULT_LOCAL_SRC2+" trovato nella cartella dell'app"); }
 }
 async function syncRemote2(silent){
   const url=(document.getElementById("remoteUrl2")?.value||S.remoteUrl2||"").trim();
   if(!url){ if(!silent)toast("Inserisci prima l'indirizzo della sorgente"); return; }
   if(!navigator.onLine){ if(!silent)toast("Offline: impossibile aggiornare ora"); return; }
-  try{ if(!silent)toast("Aggiornamento dati premium in corso…");
+  try{ if(!silent)toast("Aggiornamento Dati+ in corso…");
     const res=await fetch(url,{cache:"no-store"}); if(!res.ok)throw 0;
     const db=normalizeIncoming(await res.json());
     await commitDataset2(db); S.lastSync2=Date.now(); await sset("lastSync2",""+S.lastSync2);
-    applyAndRender(); renderSettings(); updateVerPill(); toast("Dati premium aggiornati a "+fmtDate(db.v));
+    applyAndRender(); renderSettings(); updateVerPill(); toast("Dati+ aggiornati a "+fmtDate(db.v));
   }catch(e){ if(!silent)toast("Aggiornamento non riuscito. Verifica l'indirizzo/accesso."); }
 }
 async function saveRemote2(){ S.remoteUrl2=document.getElementById("remoteUrl2").value.trim(); await sset("remoteUrl2",S.remoteUrl2); toast("Sorgente salvata"); }
@@ -2089,8 +2089,8 @@ async function onPickJson2(input){
     if(!db||!db.rows||!db.rows.length) throw new Error("nessuno strumento letto");
     await commitDataset2(db); S.lastSync2=Date.now(); await sset("lastSync2",""+S.lastSync2);
     applyAndRender(); updateVerPill(); renderSettings();
-    st.textContent="Caricati "+db.rows.length.toLocaleString("it-IT")+" strumenti premium · agg. "+fmtDate(db.v); toast("Dati premium aggiornati");
-  }catch(e){ st.textContent="File non leggibile: "+((e&&e.message)||e)+". Verifica che sia il .json generato dal Converter dati premium."; }
+    st.textContent="Caricati "+db.rows.length.toLocaleString("it-IT")+" strumenti Dati+ · agg. "+fmtDate(db.v); toast("Dati+ aggiornati");
+  }catch(e){ st.textContent="File non leggibile: "+((e&&e.message)||e)+". Verifica che sia il .json generato dal Converter Dati+."; }
 }
 // ---- lettore XLSX interno (nessuna dipendenza, funziona offline) ----
 async function inflateRaw(bytes){
