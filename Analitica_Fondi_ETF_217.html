@@ -94,11 +94,12 @@ input,select{font-family:var(--tBook)}
 .card{background:var(--white);border:1px solid var(--hair);border-radius:16px;padding:12px 13px;margin:8px 0;
   display:flex;gap:11px;align-items:flex-start;position:relative;transition:border-color .12s}
 .card.sel{border-color:var(--magenta);box-shadow:0 0 0 1px var(--magenta) inset}
-.acc{width:4px;align-self:stretch;border-radius:3px;flex:0 0 auto}
-.acc.etf{width:0;border-left:4px dashed;border-radius:0;background:none!important}
-.badgePlus{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,var(--magenta),#B8335A);
-  color:#fff;font-family:var(--tMed);font-size:9.5px;letter-spacing:.04em;padding:2px 7px 2px 6px;border-radius:999px;
-  margin-bottom:4px;box-shadow:0 1px 3px rgba(208,63,101,.35)}
+.acc{width:2px;align-self:stretch;border-radius:3px;flex:0 0 auto}
+.acc.etf{width:0;border-left:2px dashed;opacity:.6;border-radius:0;background:none!important}
+.badgePlus{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,var(--f3),var(--f2));
+  color:var(--blu);font-family:var(--tMed);font-size:9.5px;letter-spacing:.04em;padding:2px 7px 2px 6px;border-radius:999px;
+  margin-bottom:4px;box-shadow:0 1px 3px rgba(185,168,132,.5)}
+#premChip{border-color:var(--f2)}#premChip.on{background:var(--f2);border-color:var(--f2);color:var(--blu)}
 .card .body{flex:1;min-width:0}
 .cname{font-family:var(--tMed);font-size:14.5px;color:var(--blu);line-height:1.25;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -321,32 +322,32 @@ table.cmp td.worst{color:var(--neg)}
 .statusb.st-ok{color:var(--pos);border-color:var(--pos)}
 .statusb.st-pol{color:var(--flessibile);border-color:var(--flessibile);border-style:dotted}
 .statusb.st-pir{color:var(--liquidita);border-color:var(--liquidita)}
-.statusb.st-etf{color:var(--blu);border-color:var(--blu);border-style:dashed}
+.statusb.st-etf{color:var(--blu);border-color:var(--blu);border-width:1px;border-style:dashed;opacity:.8}
 .statusb.st-oth{color:var(--grigio);border-color:var(--grigio);border-style:dashed}
-.statusb.st-new{background:#FFE600;border-color:#1B1D28;color:#1B1D28;font-family:var(--tBold)}
+.statusb.st-new{background:var(--magenta);border-color:var(--magenta);color:#fff;font-family:var(--tBold)}
 .statusb.st-hard{background:#7A1230;border-color:#7A1230;color:#fff;font-family:var(--tBold)}
 .statusb.st-full{background:var(--neg);border-color:var(--neg);color:#fff;font-family:var(--tBold)}
 .statusb.st-soft{background:#C9791A;border-color:#C9791A;color:#fff;font-family:var(--tBold)}
 .sttag{display:inline-flex;align-items:center;gap:4px;font-family:var(--tBold);font-size:10px;letter-spacing:.07em;
   padding:2px 7px;border-radius:5px;margin:0 7px 0 0;vertical-align:1px;text-transform:uppercase;white-space:nowrap;line-height:1.35}
-.sttag.st-new{background:#FFE600;color:#1B1D28;box-shadow:0 0 0 1.5px #1B1D28 inset}
+.sttag.st-new{background:var(--magenta);color:#fff}
 .sttag.st-hard{background:#7A1230;color:#fff}
 .sttag.st-full{background:var(--neg);color:#fff}
 .sttag.st-soft{background:#C9791A;color:#fff}
-.card.st-new{border-color:#F2C500;box-shadow:0 0 0 1px #F2C500 inset}
+.card.st-new{border-color:var(--magenta);box-shadow:0 0 0 1px var(--magenta) inset}
 .card.st-hard{border-color:#7A1230;box-shadow:0 0 0 1px #7A1230 inset}
 .card.st-full{border-color:var(--neg)}
 .tag.stt{color:#fff;font-family:var(--tBold);letter-spacing:.04em}
 .tag.stt.st-ok{background:var(--pos)}.tag.stt.st-pol{background:var(--flessibile)}.tag.stt.st-pir{background:var(--liquidita)}
 .tag.stt.st-etf{background:var(--blu)}.tag.stt.st-oth{background:var(--grigio)}
-.tag.stt.st-new{background:#FFE600;color:#1B1D28;box-shadow:0 0 0 1.5px #1B1D28 inset}
+.tag.stt.st-new{background:var(--magenta);color:#fff}
 .tag.stt.st-hard{background:#7A1230}.tag.stt.st-full{background:var(--neg)}.tag.stt.st-soft{background:#C9791A}
 .stbanner{display:flex;gap:10px;align-items:center;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;line-height:1.4}
 .stbanner b{font-family:var(--tBold);letter-spacing:.07em;font-size:13px;white-space:nowrap}
-.stbanner.st-new{background:#FFF7B8;border:1.5px solid #1B1D28;color:#1B1D28}
+.stbanner.st-new{background:#F8E3E9;border:1.5px solid var(--magenta);color:var(--blu)}.stbanner.st-new b{color:var(--magenta)}
 .stbanner.st-hard{background:#7A1230;color:#fff}.stbanner.st-full{background:var(--neg);color:#fff}.stbanner.st-soft{background:#C9791A;color:#fff}
-.chip.stchip-new{background:#FFE600;border-color:#1B1D28;color:#1B1D28;font-family:var(--tBold)}
-.chip.stchip-new.on{background:#1B1D28;color:#FFE600}
+.chip.stchip-new{background:var(--magenta);border-color:var(--magenta);color:#fff;font-family:var(--tBold)}
+.chip.stchip-new.on{background:var(--blu);border-color:var(--blu);color:#fff}
 .chip.stchip-hard{border-color:#7A1230;color:#7A1230}
 .chip.stchip-hard.on{background:#7A1230;color:#fff;border-color:#7A1230}
 .prx-t{margin:14px 4px 6px;color:var(--ink2)}
@@ -1063,7 +1064,7 @@ function renderList(){
         <div class="csub">${esc(dictv(r,"casa")||"")} · ${esc(dictv(r,"wise")||"")}${domFlag?` · ${domFlag} ${esc(r[I.pDom])}`:""}</div>
         <div class="idrow">${isinChip(isin)}${statusBadge(r)}</div>
         <div class="crow">
-          ${isEtf?`<span class="tag" style="background:none;border:1.5px dashed ${CATCOL[macro]||'var(--altro)'};color:${CATCOL[macro]||'var(--altro)'}">◆ ETF</span>`:""}
+          ${isEtf?`<span class="tag" style="background:none;border:1px dashed ${CATCOL[macro]||'var(--altro)'};color:${CATCOL[macro]||'var(--altro)'}">◆ ETF</span>`:""}
           ${macro?`<span class="tag cat" style="background:${CATCOL[macro]}">${macro}</span>`:""}
           <span class="tag">${esc(dictv(r,"distrib")||"—")}</span>
           ${classe?`<span class="tag">Cl. ${esc(classe)}</span>`:""}
@@ -1311,7 +1312,7 @@ function openDetail(isin){
       <div class="dt-isin"><span onclick="copyIsin('${escq(isin)}',event)" style="cursor:pointer;border-bottom:1px dotted var(--grigio)">${esc(isin)}</span> · classe ${esc(dictv(r,"classe")||"—")} <span class="tiny" style="opacity:.7">(tocca l'ISIN per copiarlo)</span></div>
       <div class="dt-tags">
         ${stTagHtml(r)}
-        ${isEtf?`<span class="tag" style="background:none;border:1.5px dashed ${macro?CATCOL[macro]:'var(--altro)'};color:${macro?CATCOL[macro]:'var(--altro)'}">◆ ETF</span>`:""}
+        ${isEtf?`<span class="tag" style="background:none;border:1px dashed ${macro?CATCOL[macro]:'var(--altro)'};color:${macro?CATCOL[macro]:'var(--altro)'}">◆ ETF</span>`:""}
         ${macro?`<span class="tag cat" style="background:${CATCOL[macro]}">${macro}</span>`:""}
         ${risk?`<span class="tag risk" style="background:${RISKCOL[risk]}">Rischio ${risk}</span>`:""}
         <span class="tag">${esc(dictv(r,"distrib")||"—")}</span>
