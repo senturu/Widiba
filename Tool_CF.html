@@ -271,7 +271,7 @@ window.addEventListener("load",async ()=>{
    Scrive il JSON direttamente nel repo (commit con la GitHub Contents API), sostituendo il file esistente.
    Config (owner, repo, branch, cartella, token) modificabile dal pannello "⚙ GitHub"; salvata solo in localStorage. */
 const GH=(function(){
-  const KEY="wdb_gh_cfg", DEF={owner:"senturu",repo:"widiba",branch:"main",folder:"",token:""};
+  const KEY="wdb_gh_cfg", DEF={owner:"senturu",repo:"Widiba",branch:"main",folder:"",token:""};
   const REG={}; let seq=0;
   function load(){ try{ const r=localStorage.getItem(KEY); return Object.assign({},DEF,r?JSON.parse(r):{}); }catch(e){ return Object.assign({},DEF); } }
   function save(c){ try{ localStorage.setItem(KEY,JSON.stringify(c)); return true; }catch(e){ return false; } }
