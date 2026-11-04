@@ -49,7 +49,7 @@ input[type=file]{display:none}
   <div class="card">
     <div class="filetto"></div>
     <h2>File portafogli modello</h2>
-    <p>Il file Excel con i due fogli <b>"MPS"</b> e <b>"Mediobanca"</b>, ciascuno con gli strumenti e i pesi percentuali per i 7 profili di rischio (BT01…LT11). Accetta il file <b>.xlsx</b> originale o un <b>.json</b> già convertito.</p>
+    <p>Il file Excel dei portafogli modello: foglio <b>MPS</b> e, se disponibile, foglio <b>Mediobanca</b> (anche un file con il solo foglio MPS, pure se chiamato "Sheet1"). Colonne lette per nome: Isin, Descrizione, categorie e i profili presenti (es. BT01, MT01…LT11). La data viene presa dal nome del file (es. 2026-11-04_…). Accetta il file <b>.xlsx</b> originale o un <b>.json</b> già convertito.</p>
     <input type="file" id="portFile" accept=".xlsx,.json" onchange="onPickPort(this)">
     <button class="btn" onclick="document.getElementById('portFile').click()">Scegli file</button>
     <div id="statusPort" class="status"></div>
@@ -91,18 +91,41 @@ function colToIdx(ref){ const m=ref.match(/^([A-Z]+)/)[1]; let n=0; for(const c 
 function esc(s){ return (s==null?"":(""+s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function escq(s){ return (""+s).replace(/'/g,"\\'"); }
 
-const PROFILES=[["BT01","Breve Termine 01"],["MT02","Medio Termine 02"],["MT03","Medio Termine 03"],
-  ["MT07","Medio Termine 07"],["LT01","Lungo Termine 01"],["LT05","Lungo Termine 05"],["LT11","Lungo Termine 11"]];
-const PCOL={catGroup:1,globalCat:2,msCat:3,isin:4,nome:5,profileStart:6};
+/* v1.13 · profili e colonne letti dall'intestazione dell'Excel (non più fissi):
+   i codici profilo sono le colonne del tipo BT01 / MT01 / LT11; le altre per nome. */
+const PROF_PREFIX={BT:"Breve Termine",MT:"Medio Termine",LT:"Lungo Termine"};
+const PROF_RE=/^(BT|MT|LT)\s*(\d{1,2})(?!\d)/i;
+const PROFILES_STD=["BT01","MT01","MT03","MT07","LT01","LT05","LT11"];   // i 7 profili MiFID, sempre questi
+const PROF_ALIAS={MT02:"MT01"};                                            // vecchi file riportavano MT02 per MT01
+function profCode(h){ const m=PROF_RE.exec(String(h==null?"":h).trim()); if(!m) return null; let c=m[1].toUpperCase()+m[2].padStart(2,"0"); c=PROF_ALIAS[c]||c; return PROFILES_STD.includes(c)?c:null; }
+function profLabel(code){ return (PROF_PREFIX[code.slice(0,2)]||code.slice(0,2))+" "+code.slice(2); }
+function profSort(a,b){ const o={BT:0,MT:1,LT:2}; return (o[a.slice(0,2)]-o[b.slice(0,2)])||(+a.slice(2)-+b.slice(2)); }
+function headerInfo(aoa){
+  for(let r=0;r<Math.min(aoa.length,15);r++){
+    const row=(aoa[r]||[]).map(v=>String(v==null?"":v).replace(/\s+/g," ").trim());
+    const low=row.map(v=>v.toLowerCase());
+    const isin=low.findIndex(v=>v==="isin");
+    const prof=[]; row.forEach((v,i)=>{ const c=profCode(v); if(c) prof.push([c,i]); });
+    if(isin<0||!prof.length) continue;
+    const f=t=>low.findIndex(v=>v===t);
+    const nome=[f("descrizione"),f("nome"),f("strumento"),f("denominazione")].find(i=>i>=0);
+    return {row:r,col:{catGroup:f("category group"),globalCat:f("global category"),msCat:f("morningstar category"),isin,nome:nome!=null?nome:isin+1},prof};
+  }
+  throw new Error("Intestazione non trovata (servono le colonne Isin e i profili BT01…LT11)");
+}
 
 function cleanTxt(v){ if(v==null) return null; const s=String(v).replace(/\s+/g," ").trim(); if(s===""||s.toLowerCase()==="nd") return null; return s; }
 function numV(v){ if(v==null||v==="") return null; const n=typeof v==="number"?v:parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; }
 
-async function readSheetAoA(u8,dv,E,sheetName){
+async function listSheets(u8,dv,E){
   const wb=await zipText(u8,dv,E,"xl/workbook.xml");
+  let sheets=[...wb.matchAll(/<sheet[^>]*name="([^"]+)"[^>]*r:id="([^"]+)"/g)].map(m=>({name:xmlUnesc(m[1]),rid:m[2]}));
+  if(!sheets.length) for(const m of wb.matchAll(/<sheet[^>]*r:id="([^"]+)"[^>]*name="([^"]+)"/g)) sheets.push({name:xmlUnesc(m[2]),rid:m[1]});
+  return sheets;
+}
+async function readSheetAoA(u8,dv,E,sheetName){
   const rels=await zipText(u8,dv,E,"xl/_rels/workbook.xml.rels");
-  let sheets=[...wb.matchAll(/<sheet[^>]*name="([^"]+)"[^>]*r:id="([^"]+)"/g)].map(m=>({name:m[1],rid:m[2]}));
-  if(!sheets.length) for(const m of wb.matchAll(/<sheet[^>]*r:id="([^"]+)"[^>]*name="([^"]+)"/g)) sheets.push({name:m[2],rid:m[1]});
+  const sheets=await listSheets(u8,dv,E);
   const chosen=sheets.find(s=>s.name===sheetName || s.name.toLowerCase()===sheetName.toLowerCase());
   if(!chosen) throw new Error("Foglio '"+sheetName+"' non trovato nel file");
   const rm=new RegExp('Id="'+chosen.rid+'"[^>]*Target="([^"]+)"').exec(rels);
@@ -133,17 +156,21 @@ async function readSheetAoA(u8,dv,E,sheetName){
   }
   return aoa;
 }
-function parseSheetItems(aoa){
-  const items=[];
-  for(let r=1;r<aoa.length;r++){ // riga 0 = intestazione
+function parseSheetItems(aoa,codesOut){
+  const items=[]; if(!aoa||!aoa.length) return items;
+  const H=headerInfo(aoa), C=H.col;
+  H.prof.forEach(([c])=>codesOut&&codesOut.add(c));
+  const g=(row,i)=>i>=0?row[i]:null;
+  for(let r=H.row+1;r<aoa.length;r++){
     const row=aoa[r]||[];
-    const nome=cleanTxt(row[PCOL.nome]);
+    const nome=cleanTxt(g(row,C.nome));
     if(!nome) continue;
-    const isin=cleanTxt(row[PCOL.isin]);
-    const catGroup=cleanTxt(row[PCOL.catGroup]), globalCat=cleanTxt(row[PCOL.globalCat]), msCat=cleanTxt(row[PCOL.msCat]);
+    const isin=cleanTxt(g(row,C.isin));
+    if(isin && /^(totale|total)$/i.test(nome)) continue;
+    const catGroup=cleanTxt(g(row,C.catGroup)), globalCat=cleanTxt(g(row,C.globalCat)), msCat=cleanTxt(g(row,C.msCat));
     const pesi={};
-    PROFILES.forEach(([code],i)=>{
-      const v=numV(row[PCOL.profileStart+i]);
+    H.prof.forEach(([code,ci])=>{
+      const v=numV(row[ci]);
       if(v!=null && v!==0) pesi[code]=Math.round(v*1e6)/1e6;
     });
     if(!Object.keys(pesi).length && !isin) continue;
@@ -151,20 +178,58 @@ function parseSheetItems(aoa){
   }
   return items;
 }
-async function parseXlsxPortafogli(ab){
+async function parseXlsxPortafogli(ab,fileName){
   const u8=new Uint8Array(ab), dv=new DataView(ab);
   const E=zipEntries(u8,dv);
-  const aoaMps=await readSheetAoA(u8,dv,E,"MPS");
-  const aoaMb=await readSheetAoA(u8,dv,E,"Mediobanca");
-  const today=new Date().toISOString().slice(0,10);
+  const sheets=await listSheets(u8,dv,E);
+  const fnLow=(fileName||"").toLowerCase();
+  const shMb=sheets.find(s=>/mediobanca|\bmb\b/i.test(s.name));
+  let shMps=sheets.find(s=>/\bmps\b|monte/i.test(s.name));
+  // foglio MPS non nominato (es. "Sheet1"): se il file è dichiarato MPS o c'è un solo foglio non-Mediobanca, prendo quello
+  if(!shMps){ const others=sheets.filter(s=>s!==shMb && !/legenda|note|info/i.test(s.name));
+    if(others.length===1 || /mps/.test(fnLow)) shMps=others[0]; }
+  // file con un solo foglio dichiarato Mediobanca nel nome
+  let mbSheet=shMb; if(!mbSheet && !shMps && /mediobanca/.test(fnLow) && sheets.length===1) mbSheet=sheets[0];
+  if(!shMps && !mbSheet) throw new Error("nessun foglio riconosciuto (attesi 'MPS' e/o 'Mediobanca')");
+  const codes=new Set();
+  const itemsMps=shMps?parseSheetItems(await readSheetAoA(u8,dv,E,shMps.name),codes):[];
+  const itemsMb=mbSheet?parseSheetItems(await readSheetAoA(u8,dv,E,mbSheet.name),codes):[];
+  const dm=/(20\d{2})-(\d{2})-(\d{2})/.exec(fileName||"");
+  const today=dm?dm[0]:new Date().toISOString().slice(0,10);
+  // profili presenti in almeno una banca
   return {
     generato: today,
-    profiles: PROFILES.map(([code,label])=>({code,label})),
+    profiles: PROFILES_STD.map(code=>({code,label:profLabel(code)})),
     banche: {
-      mps: {label:"Banca Monte dei Paschi di Siena", short:"MPS", items:parseSheetItems(aoaMps)},
-      mediobanca: {label:"Mediobanca", short:"Mediobanca", items:parseSheetItems(aoaMb)},
+      mps: {label:"Banca Monte dei Paschi di Siena", short:"MPS", items:itemsMps},
+      mediobanca: {label:"Mediobanca", short:"Mediobanca", items:itemsMb},
     }
   };
+}
+
+/* v1.13 · controllo di coerenza: pesi che sommano a 100% e quota azionaria crescente col profilo (BT < MT < LT, e numero crescente) */
+function sanityWarnings(obj){
+  const w=[], ord={BT:0,MT:1,LT:2};
+  const codes=obj.profiles.map(p=>p.code);
+  for(const [bk,b] of Object.entries(obj.banche)){
+    if(!b.items.length) continue;
+    const miss=codes.filter(c=>!b.items.some(it=>it.pesi[c]!=null));
+    if(miss.length) w.push(`${b.short}: nessun peso per ${miss.join(", ")} (nel tool apparirà "non disponibile").`);
+    const eq={};
+    for(const c of codes){
+      const its=b.items.filter(it=>it.pesi[c]!=null);
+      if(!its.length) continue;
+      const tot=its.reduce((a,it)=>a+it.pesi[c],0);
+      if(Math.abs(tot-1)>0.01) w.push(`${b.short} ${c}: i pesi sommano a ${(tot*100).toFixed(1)}% invece di 100%.`);
+      eq[c]=its.filter(it=>/equity|azionar/i.test(it.catGroup||"")).reduce((a,it)=>a+it.pesi[c],0);
+    }
+    for(const pre of ["BT","MT","LT"]){
+      const cs=codes.filter(c=>c.startsWith(pre)&&eq[c]!=null);
+      for(let i=1;i<cs.length;i++) if(eq[cs[i]]+0.02<eq[cs[i-1]])
+        w.push(`${b.short}: ${cs[i]} ha meno azionario (${(eq[cs[i]]*100).toFixed(1)}%) di ${cs[i-1]} (${(eq[cs[i-1]]*100).toFixed(1)}%). Possibili colonne dei profili scambiate.`);
+    }
+  }
+  return w;
 }
 
 /* ============ UI ============ */
@@ -173,7 +238,9 @@ function downloadJson(obj,filename,statusElId){
   const js=JSON.stringify(obj);
   const nMps=obj.banche.mps.items.length, nMb=obj.banche.mediobanca.items.length;
   const st=document.getElementById(statusElId);
-  if(st) st.innerHTML=`✅ <b>${filename}</b> generato · MPS: ${nMps} strumenti · Mediobanca: ${nMb} strumenti · ${(js.length/1024).toFixed(0)} KB<br><span class="tiny">Carica questo file nella stessa cartella di Portafogli_Modello.html per l'aggiornamento automatico.</span>`;
+  if(st) st.innerHTML=`✅ <b>${filename}</b> generato · MPS: ${nMps} strumenti · Mediobanca: ${nMb?nMb+" strumenti":"non presente (sarà nascosta nel tool)"} · profili: ${obj.profiles.map(p=>p.code).join(", ")} · data ${obj.generato} · ${(js.length/1024).toFixed(0)} KB<br><span class="tiny">Carica questo file nella stessa cartella di Portafogli_Modello.html per l'aggiornamento automatico.</span>`;
+  const warn=sanityWarnings(obj);
+  if(st && warn.length) st.innerHTML+=`<div style="margin-top:10px;padding:10px 12px;border-left:3px solid #D03F65;background:#fff;border-radius:0 10px 10px 0;font-size:12px;line-height:1.5">⚠️ <b>Controllo di coerenza</b> — verifica con chi ha inviato l'Excel prima di pubblicare:<br>${warn.map(esc).join("<br>")}</div>`;
   if(st) GH.mount(st,js,filename);
 }
 async function onPickPort(input){
@@ -183,11 +250,11 @@ async function onPickPort(input){
     let data;
     if(/\.json$/i.test(file.name)) data=JSON.parse(await file.text());
     else if(typeof DecompressionStream==="undefined"){ st.textContent="Questo browser non supporta la lettura .xlsx: usa Chrome/Safari aggiornati."; return; }
-    else data=await parseXlsxPortafogli(await file.arrayBuffer());
-    if(!data||!data.banche||!data.banche.mps.items.length) throw new Error("nessuna riga letta");
+    else data=await parseXlsxPortafogli(await file.arrayBuffer(),file.name);
+    if(!data||!data.banche||(!data.banche.mps.items.length&&!data.banche.mediobanca.items.length)) throw new Error("nessuna riga letta");
     downloadJson(data,"portafogli_modello_data.json","statusPort");
     toast("portafogli_modello_data.json generato");
-  }catch(e){ st.textContent="File non leggibile: "+((e&&e.message)||e)+". Verifica che sia il file con i fogli 'MPS' e 'Mediobanca'."; }
+  }catch(e){ st.textContent="File non leggibile: "+((e&&e.message)||e)+". Verifica che sia il file dei portafogli modello (foglio MPS e/o Mediobanca, con colonne Isin e profili BT01…LT11)."; }
 }
 
 </script>
