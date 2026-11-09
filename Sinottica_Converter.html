@@ -92,6 +92,7 @@ function xmlUnesc(s){ return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace
 function hKey(h){ return h==null?"":String(h).toLowerCase().replace(/[\s\u00a0\u00ad\-\u2010-\u2013]+/g,""); }
 function estDateOf(t){ if(!t) return null; const m=/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t); if(!m) return null;
   const y=m[3].length===2?"20"+m[3]:m[3]; return m[1].padStart(2,"0")+"/"+m[2].padStart(2,"0")+"/"+y; }
+function abToB64(ab){ const u=new Uint8Array(ab); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
 function colToIdx(ref){ const m=ref.match(/^([A-Z]+)/)[1]; let n=0; for(const c of m) n=n*26+(c.charCodeAt(0)-64); return n-1; }
 
 async function readSheetAoA(u8,dv,E,sheetName){
@@ -387,7 +388,8 @@ async function generate(){
     if(!catalogoRecords) throw new Error("carica almeno il file CSV oppure il file Excel per generare il Catalogo");
 
     const encoded=encodeCatalogo(catalogoRecords);
-    const finalJson={ v:new Date().toISOString().slice(0,10), schema:encoded.schema, dicts:encoded.dicts, rows:encoded.rows,
+    const VER=new Date().toISOString().slice(0,10);
+    const finalJson={ v:VER, schema:encoded.schema, dicts:encoded.dicts, rows:encoded.rows,
       pac, spese, _n:catalogoRecords.length };
 
     const jsonStr=JSON.stringify(finalJson);
@@ -395,9 +397,17 @@ async function generate(){
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="catalogo.json";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    // copia esatta dell'Excel per il pulsante "Scarica Excel" del tool (scaricata dai CF solo su richiesta)
+    let xlsxLink="";
+    if(STAGE.xlsxAb){
+      const xj=JSON.stringify({v:VER,name:STAGE.xlsxName,size:STAGE.xlsxAb.byteLength,b64:abToB64(STAGE.xlsxAb)});
+      const xb=new Blob([xj],{type:"application/json"}); const xu=URL.createObjectURL(xb);
+      setTimeout(()=>{ const a2=document.createElement("a"); a2.href=xu; a2.download="catalogo_xlsx.json"; document.body.appendChild(a2); a2.click(); a2.remove(); },600);
+      xlsxLink=`<br>✅ <b>catalogo_xlsx.json</b> generato (copia esatta di ${esc(STAGE.xlsxName)}, ${(xj.length/1024/1024).toFixed(1)} MB) · <a href="${xu}" download="catalogo_xlsx.json">scaricalo di nuovo</a> se il browser l'ha bloccato.`;
+    }
 
     st.innerHTML=`✅ <b>catalogo.json</b> generato · ${catalogoRecords.length.toLocaleString("it-IT")} strumenti · ${pac.length} case con PAC · ${spese.length} case con Spese · ${(jsonStr.length/1024/1024).toFixed(2)} MB<br>
-      <span class="tiny">Carica questo file nella stessa cartella di Tabella_Sinottica.html per l'aggiornamento automatico.</span>`;
+      ${xlsxLink}<br><span class="tiny">Carica questi file nella stessa cartella della Tabella Sinottica: <b>catalogo.json</b> per l'aggiornamento automatico, <b>catalogo_xlsx.json</b> per il pulsante "Scarica Excel" (viene scaricato dai CF solo quando lo premono).</span>`;
     toast("catalogo.json generato");
   }catch(e){
     st.innerHTML=`<span style="color:var(--magenta)">Errore: ${esc((e&&e.message)||String(e))}</span>`;
