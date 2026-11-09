@@ -87,6 +87,11 @@ async function zipRead(u8,dv,e){
 }
 async function zipText(u8,dv,E,name){ return new TextDecoder().decode(await zipRead(u8,dv,E[name])); }
 function xmlUnesc(s){ return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n)).replace(/&amp;/g,"&"); }
+/* intestazioni confrontate senza spazi, a capo (\n o \r\n), trattini e maiuscole:
+   "Rating\nMS", "Rating MS" e "Rating\r\nMS" sono la stessa colonna */
+function hKey(h){ return h==null?"":String(h).toLowerCase().replace(/[\s\u00a0\u00ad\-\u2010-\u2013]+/g,""); }
+function estDateOf(t){ if(!t) return null; const m=/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t); if(!m) return null;
+  const y=m[3].length===2?"20"+m[3]:m[3]; return m[1].padStart(2,"0")+"/"+m[2].padStart(2,"0")+"/"+y; }
 function colToIdx(ref){ const m=ref.match(/^([A-Z]+)/)[1]; let n=0; for(const c of m) n=n*26+(c.charCodeAt(0)-64); return n-1; }
 
 async function readSheetAoA(u8,dv,E,sheetName){
@@ -184,8 +189,8 @@ const DICT_FIELDS=["casa","macro","wise","ms","valuta","rischio","classe","statu
 
 function transformCatalogoFromCSV(csvRows){
   const header=csvRows[1], data=csvRows.slice(2);
-  const hIdx={}; header.forEach((h,i)=>{ if(hIdx[h]==null) hIdx[h]=i; });
-  const col=(r,name)=>{ const i=hIdx[name]; return i==null?null:r[i]; };
+  const hIdx={}; header.forEach((h,i)=>{ const k=hKey(h); if(k && hIdx[k]==null) hIdx[k]=i; });
+  const col=(r,name)=>{ const i=hIdx[hKey(name)]; return i==null?null:r[i]; };
   const out=[];
   for(const r of data){
     const isin=clean(col(r,"ISIN Portatore / Cumulativo"));
@@ -272,14 +277,15 @@ function encodeCatalogo(records){
    header su riga 2 (indice 1), dati da riga 3 (indice 2) */
 function transformCatalogoFromExcelAoA(aoa){
   const header=(aoa[1]||[]).map(h=>h==null?null:String(h));
-  const hIdx={}; header.forEach((h,i)=>{ if(h!=null && hIdx[h]==null) hIdx[h]=i; });
-  const col=(r,name)=>{ const i=hIdx[name]; return i==null?null:r[i]; };
+  const hIdx={}; header.forEach((h,i)=>{ const k=hKey(h); if(k && hIdx[k]==null) hIdx[k]=i; });
+  const col=(r,name)=>{ const i=hIdx[hKey(name)]; return i==null?null:r[i]; };
+  let noteCol=-1; header.forEach((h,i)=>{ if(hKey(h)==="note") noteCol=i; });
   const out=[];
   for(let ri=2; ri<aoa.length; ri++){
     const r=aoa[ri]||[];
     const isin=clean(col(r,"ISIN Portatore \\ Cumulativo")) || clean(col(r,"ISIN Portatore / Cumulativo"));
     if(!isin) continue;
-    const dataIns=r[hIdx["Data inserim. a catalogo"]];
+    const dataIns=col(r,"Data inserim. a catalogo");
     let anno=null;
     if(typeof dataIns==="number"){
       // le date Excel sono numeri seriali: giorni dal 1899-12-30 (con la nota anomalia dell'anno 1900)
@@ -291,8 +297,10 @@ function transformCatalogoFromExcelAoA(aoa){
     const sott=fracToPct(col(r,"Sottoscrizione")), gest=fracToPct(col(r,"Gestione")),
       dist=fracToPct(col(r,"Distribuzione")), rimb=fracToPct(col(r,"Rimborso")),
       up=fracToPct(col(r,"Upfront (Sottoscriz. o Collocamento)")), cont=fracToPct(col(r,"Continuing (Gestione e distribuzione)"));
+    const st=normStatus(col(r,"STATUS\nCollocam"));
+    const note=noteCol>=0?clean(r[noteCol]):null;   // ultima colonna "Note" (eventi: estinzioni, chiusure, fusioni)
     out.push({
-      isin, status:normStatus(col(r,"STATUS\nCollocam")), casa:normCasa(col(r,"Casa di Gestione")),
+      isin, status:st, casa:normCasa(col(r,"Casa di Gestione")),
       gamma:clean(col(r,"Sicav - Gamma")), nome:clean(col(r,"Nome del comparto")), classe:clean(col(r,"Classe")),
       valuta:clean(col(r,"Valuta di tratta-zione")), distrib:clean(col(r,"Politica distribu-zione")), anno,
       macro:clean(col(r,"Macro Categoria")), wise:clean(col(r,"Categoria Wise")), ms:clean(col(r,"Categoria Morningstar")),
@@ -305,8 +313,8 @@ function transformCatalogoFromExcelAoA(aoa){
       ir1y:num(r[53]), alpha1y:num(r[55]), tev1y:num(r[57]),
       maxdd:num(col(r,"Ribasso, %")), recov:num(col(r,"Reco very, gg")), distR1y:num(col(r,"1Y,\n%")),
       cedola:num(col(r,"ultima cedola")), kid:clean(col(r,"KID")),
-      commRimb:rimb, commGD:(gest!=null||dist!=null)?Math.round(((gest||0)+(dist||0))*1e4)/1e4:null,
-      noteEst:null, estDate:null,
+      commDist:dist, commRimb:rimb, commGD:(gest!=null||dist!=null)?Math.round(((gest||0)+(dist||0))*1e4)/1e4:null,
+      noteEst:(note&&st!=="Catalogo")?note:null, estDate:(st==="Estinto")?estDateOf(note):null,
     });
   }
   return out;
@@ -383,161 +391,19 @@ async function generate(){
       pac, spese, _n:catalogoRecords.length };
 
     const jsonStr=JSON.stringify(finalJson);
+    const blob=new Blob([jsonStr],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="catalogo.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 
     st.innerHTML=`✅ <b>catalogo.json</b> generato · ${catalogoRecords.length.toLocaleString("it-IT")} strumenti · ${pac.length} case con PAC · ${spese.length} case con Spese · ${(jsonStr.length/1024/1024).toFixed(2)} MB<br>
       <span class="tiny">Carica questo file nella stessa cartella di Tabella_Sinottica.html per l'aggiornamento automatico.</span>`;
-    GH.mount(st,jsonStr,"catalogo.json");
     toast("catalogo.json generato");
   }catch(e){
     st.innerHTML=`<span style="color:var(--magenta)">Errore: ${esc((e&&e.message)||String(e))}</span>`;
   }
 }
 
-</script>
-<script>
-/* ============ Widiba · Pubblica su GitHub (modulo condiviso) ============
-   Scrive il JSON direttamente nel repo (commit con la GitHub Contents API), sostituendo il file esistente.
-   Config (owner, repo, branch, cartella, token) modificabile dal pannello "⚙ GitHub"; salvata solo in localStorage. */
-const GH=(function(){
-  const KEY="wdb_gh_cfg", DEF={owner:"senturu",repo:"Widiba",branch:"main",folder:"",token:""};
-  const REG={}; let seq=0;
-  function load(){ try{ const r=localStorage.getItem(KEY); return Object.assign({},DEF,r?JSON.parse(r):{}); }catch(e){ return Object.assign({},DEF); } }
-  function save(c){ try{ localStorage.setItem(KEY,JSON.stringify(c)); return true; }catch(e){ return false; } }
-  function h(s){ return (s==null?"":""+s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-  function cleanFolder(f){ return (f||"").trim().replace(/^\/+|\/+$/g,""); }
-  function targetPath(c,filename){ const f=cleanFolder(c.folder); return f?f+"/"+filename:filename; }
-  function apiUrl(c,path){ return "https://api.github.com/repos/"+encodeURIComponent(c.owner)+"/"+encodeURIComponent(c.repo)+"/contents/"+path.split("/").map(encodeURIComponent).join("/"); }
-  function headers(c){ return {"Accept":"application/vnd.github+json","Authorization":"Bearer "+c.token,"X-GitHub-Api-Version":"2022-11-28"}; }
-  function b64(str){ const u8=new TextEncoder().encode(str); let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s); }
-  function toastMsg(m){ if(typeof toast==="function") toast(m); }
-  function ready(c){ if(!c.owner||!c.repo||!c.branch) return "Configura owner, repository e branch (⚙ GitHub)."; if(!c.token) return "Inserisci il token GitHub (⚙ GitHub): serve per scrivere sul repository."; return null; }
-  function errText(res,body){
-    const m=(body&&body.message)?body.message:("HTTP "+res.status);
-    if(res.status===401) return "Token non valido o scaduto ("+m+").";
-    if(res.status===403) return "Permesso negato ("+m+"). Il token deve avere accesso in scrittura ai contenuti del repository.";
-    if(res.status===404) return "Repository o branch non trovato ("+m+"). Controlla owner/repo/branch e che il token abbia accesso al repo.";
-    if(res.status===409||res.status===422) return "Conflitto durante il commit ("+m+"). Riprova.";
-    return m;
-  }
-  async function publish(obj,filename){
-    const c=load(), bad=ready(c); if(bad) throw new Error(bad);
-    const path=targetPath(c,filename), url=apiUrl(c,path);
-    const text=typeof obj==="string"?obj:JSON.stringify(obj);
-    let sha=null;
-    const g=await fetch(url+"?ref="+encodeURIComponent(c.branch),{headers:headers(c),cache:"no-store"});
-    if(g.ok){ const j=await g.json(); sha=j.sha||null; }
-    else if(g.status!==404){ let b=null; try{b=await g.json();}catch(e){} throw new Error(errText(g,b)); }
-    const d=new Date(), pad=n=>String(n).padStart(2,"0");
-    const msg="Aggiornamento "+filename+" da converter ("+d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+" "+pad(d.getHours())+":"+pad(d.getMinutes())+")";
-    const body={message:msg,content:b64(text),branch:c.branch}; if(sha) body.sha=sha;
-    const p=await fetch(url,{method:"PUT",headers:Object.assign({"Content-Type":"application/json"},headers(c)),body:JSON.stringify(body)});
-    let j=null; try{ j=await p.json(); }catch(e){}
-    if(!p.ok) throw new Error(errText(p,j));
-    return {path,created:!sha,commit:j&&j.commit?j.commit.sha:null,url:j&&j.commit?j.commit.html_url:null,repo:c.owner+"/"+c.repo,branch:c.branch,bytes:text.length};
-  }
-  function download(obj,filename){
-    const text=typeof obj==="string"?obj:JSON.stringify(obj);
-    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"application/json"})); a.download=filename;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-  }
-  /* ---- pulsanti Scarica + Pubblica ---- */
-  function actionsHTML(obj,filename){
-    const id="gh"+(++seq); REG[id]={obj,filename};
-    const c=load();
-    return `<div class="ghact" id="${id}">
-      <div class="ghrow">
-        <button type="button" class="ghbtn" onclick="GH.dl('${id}')">⬇ Scarica ${h(filename)}</button>
-        <button type="button" class="ghbtn gh-pub" onclick="GH.pub('${id}')">☁ Pubblica su GitHub</button>
-        <button type="button" class="ghbtn gh-ghost" onclick="GH.openCfg()">⚙ GitHub</button>
-      </div>
-      <div class="ghtarget">Destinazione: <b>${h(c.owner)}/${h(c.repo)}</b> · branch <b>${h(c.branch)}</b> · file <b>${h(targetPath(c,filename))}</b> (sostituisce quello esistente)</div>
-      <div class="ghres" id="${id}r"></div></div>`;
-  }
-  function mount(el,obj,filename){ if(!el) return; const holder=document.createElement("div"); holder.innerHTML=actionsHTML(obj,filename); el.appendChild(holder.firstElementChild); }
-  function getObj(r){ return typeof r.obj==="function"?r.obj():r.obj; }
-  function dl(id){ const r=REG[id]; if(!r) return; const o=getObj(r); if(o==null){ toastMsg("Analizza prima i dati"); return; } download(o,r.filename); toastMsg(r.filename+" scaricato"); }
-  async function pub(id){
-    const r=REG[id]; if(!r) return; const box=document.getElementById(id+"r"), btn=document.querySelector("#"+id+" .gh-pub");
-    const bad=ready(load()); if(bad){ box.innerHTML=`<span class="gherr">${h(bad)}</span>`; openCfg(); return; }
-    const data=getObj(r); if(data==null){ box.innerHTML=`<span class="gherr">Analizza prima i dati.</span>`; return; }
-    btn.disabled=true; box.innerHTML=`<span class="ghtiny">Pubblicazione in corso…</span>`;
-    try{
-      const o=await publish(data,r.filename);
-      box.innerHTML=`<span class="ghok">✅ Pubblicato <b>${h(o.path)}</b> su ${h(o.repo)} (${h(o.branch)}) · ${o.created?"nuovo file":"file sostituito"} · ${(o.bytes/1048576).toFixed(2)} MB</span>`+(o.url?` <a href="${h(o.url)}" target="_blank" rel="noopener">vedi commit</a>`:"");
-      toastMsg(r.filename+" pubblicato su GitHub");
-    }catch(e){ box.innerHTML=`<span class="gherr">✕ Pubblicazione non riuscita: ${h((e&&e.message)||e)}</span><br><span class="ghtiny">Puoi comunque scaricare il file con il pulsante qui sopra.</span>`; }
-    finally{ btn.disabled=false; }
-  }
-  /* ---- pannello configurazione ---- */
-  function ensureDlg(){
-    if(document.getElementById("ghDlg")) return;
-    const st=document.createElement("style");
-    st.textContent=`
-    .ghact{margin-top:14px;padding-top:12px;border-top:1px solid #E4DCCB;font-family:'WidibaBook',system-ui,sans-serif;color:#2C2E39}
-    .ghrow{display:flex;flex-wrap:wrap;gap:8px}
-    .ghbtn{border:0;border-radius:10px;padding:11px 16px;background:#2C2E39;color:#fff;font-family:'WidibaMedium',system-ui,sans-serif;font-size:13px;cursor:pointer}
-    .ghbtn.gh-pub{background:#D03F65}.ghbtn.gh-ghost{background:#EDE7DA;color:#2C2E39}.ghbtn:disabled{opacity:.5;cursor:wait}
-    .ghtarget{margin-top:8px;font-size:11px;line-height:1.5;color:#5b5d68}.ghres{margin-top:8px;font-size:12px;line-height:1.5}
-    .ghok{color:#3F7F6F}.gherr{color:#D03F65}.ghtiny{font-size:11px;color:#958B87}.ghres a{color:#2C2E39}
-    #ghDlg{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(44,46,57,.5);padding:16px}
-    #ghDlg.show{display:flex}
-    #ghBox{background:#F5F1E9;border-radius:18px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px;font-family:'WidibaBook',system-ui,sans-serif;color:#2C2E39;box-shadow:0 10px 40px rgba(0,0,0,.3)}
-    #ghBox h3{font-family:'WidibaMedium',system-ui,sans-serif;font-size:15px;margin:0 0 4px}
-    #ghBox p{font-size:11.5px;line-height:1.5;color:#5b5d68;margin:0 0 12px}
-    #ghBox label{display:block;font-family:'WidibaMedium',system-ui,sans-serif;font-size:11.5px;margin:10px 0 4px}
-    #ghBox input{width:100%;padding:9px 11px;border:1px solid #E4DCCB;border-radius:9px;font-size:13px;background:#fff;color:#2C2E39;font-family:inherit}
-    #ghBox .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    #ghBox .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-    #ghBox .acts button{flex:1;min-width:110px}
-    #ghTest{font-size:12px;margin-top:10px;line-height:1.5}
-    .ghfab{position:fixed;bottom:14px;right:12px;z-index:1500;border:1px solid #E4DCCB;background:#fff;color:#2C2E39;border-radius:999px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:'WidibaMedium',system-ui,sans-serif}`;
-    document.head.appendChild(st);
-    const d=document.createElement("div"); d.id="ghDlg";
-    d.innerHTML=`<div id="ghBox" role="dialog" aria-label="Configurazione GitHub">
-      <h3>Pubblicazione su GitHub</h3>
-      <p>I JSON generati vengono scritti direttamente nel repository (un commit che sostituisce il file esistente). Le impostazioni e il token restano solo in questo browser.</p>
-      <div class="two"><div><label for="ghOwner">Owner</label><input id="ghOwner" autocomplete="off" spellcheck="false"></div>
-      <div><label for="ghRepo">Repository</label><input id="ghRepo" autocomplete="off" spellcheck="false"></div></div>
-      <div class="two"><div><label for="ghBranch">Branch</label><input id="ghBranch" autocomplete="off" spellcheck="false"></div>
-      <div><label for="ghFolder">Cartella nel repo (vuota = radice)</label><input id="ghFolder" autocomplete="off" spellcheck="false" placeholder="es. dati"></div></div>
-      <label for="ghToken">Token GitHub (fine-grained, permesso «Contents: Read and write» solo su questo repo)</label>
-      <input id="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
-      <div id="ghTest"></div>
-      <div class="acts"><button type="button" class="ghbtn gh-ghost" onclick="GH.test()">Verifica accesso</button>
-      <button type="button" class="ghbtn gh-ghost" onclick="GH.closeCfg()">Chiudi</button>
-      <button type="button" class="ghbtn" onclick="GH.saveCfg()">Salva</button></div></div>`;
-    d.addEventListener("click",e=>{ if(e.target===d) closeCfg(); });
-    document.body.appendChild(d);
-  }
-  function readForm(){ const v=i=>document.getElementById(i).value.trim(); return {owner:v("ghOwner"),repo:v("ghRepo"),branch:v("ghBranch"),folder:cleanFolder(v("ghFolder")),token:v("ghToken")}; }
-  function openCfg(){
-    ensureDlg(); const c=load();
-    document.getElementById("ghOwner").value=c.owner; document.getElementById("ghRepo").value=c.repo;
-    document.getElementById("ghBranch").value=c.branch; document.getElementById("ghFolder").value=c.folder; document.getElementById("ghToken").value=c.token;
-    document.getElementById("ghTest").innerHTML=""; document.getElementById("ghDlg").classList.add("show");
-  }
-  function closeCfg(){ const d=document.getElementById("ghDlg"); if(d) d.classList.remove("show"); }
-  function refreshTargets(){ document.querySelectorAll(".ghact").forEach(el=>{ const r=REG[el.id]; if(!r) return; const c=load(); const t=el.querySelector(".ghtarget"); if(t) t.innerHTML=`Destinazione: <b>${h(c.owner)}/${h(c.repo)}</b> · branch <b>${h(c.branch)}</b> · file <b>${h(targetPath(c,r.filename))}</b> (sostituisce quello esistente)`; }); }
-  function saveCfg(){ const c=readForm(); const ok=save(c); closeCfg(); refreshTargets(); toastMsg(ok?"Impostazioni GitHub salvate":"Impossibile salvare le impostazioni in questo browser"); }
-  async function test(){
-    const c=readForm(), box=document.getElementById("ghTest"); save(c); refreshTargets();
-    const bad=ready(c); if(bad){ box.innerHTML=`<span class="gherr">${h(bad)}</span>`; return; }
-    box.innerHTML=`<span class="ghtiny">Verifica in corso…</span>`;
-    try{
-      const r=await fetch("https://api.github.com/repos/"+encodeURIComponent(c.owner)+"/"+encodeURIComponent(c.repo)+"/branches/"+encodeURIComponent(c.branch),{headers:headers(c),cache:"no-store"});
-      let j=null; try{ j=await r.json(); }catch(e){}
-      if(!r.ok) throw new Error(errText(r,j));
-      const r2=await fetch("https://api.github.com/repos/"+encodeURIComponent(c.owner)+"/"+encodeURIComponent(c.repo),{headers:headers(c),cache:"no-store"});
-      const j2=await r2.json().catch(()=>null);
-      const push=j2&&j2.permissions?j2.permissions.push:null;
-      box.innerHTML=push===false?`<span class="gherr">Repository raggiunto, ma il token non ha permesso di scrittura.</span>`:`<span class="ghok">✅ Accesso OK · ${h(c.owner)}/${h(c.repo)} · branch ${h(c.branch)} trovato${push?" · scrittura consentita":""}</span>`;
-    }catch(e){ box.innerHTML=`<span class="gherr">✕ ${h((e&&e.message)||e)}</span>`; }
-  }
-  function fab(){ ensureDlg(); if(document.querySelector(".ghfab")) return; const b=document.createElement("button"); b.type="button"; b.className="ghfab"; b.textContent="⚙ GitHub"; b.onclick=openCfg; document.body.appendChild(b); }
-  return {load,save,publish,download,actionsHTML,mount,dl,pub,openCfg,closeCfg,saveCfg,test,fab,targetPath,b64};
-})();
-if(typeof document!=="undefined") GH_ready_hook();
-function GH_ready_hook(){ const go=()=>{ try{ GH.fab(); }catch(e){} }; if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); }
 </script>
 </body>
 </html>
