@@ -1,12 +1,12 @@
 {
-  "generato": "2026-11-04",
+  "generato": "2026-11-09",
   "links": {
     "sinottica": {
-      "tool": "https://senturu.github.io/Widiba/Sinottica_302_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Sinottica_305_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Sinottica_Converter.html"
     },
     "fondietf": {
-      "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_217_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_219_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_Converter.html"
     },
     "etcetn": {
@@ -26,7 +26,7 @@
       "converter": "https://senturu.github.io/Widiba/Strumenti_in_Focus_Converter.html"
     },
     "portafogli": {
-      "tool": "https://senturu.github.io/Widiba/Portafogli_Modello_113_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Portafogli_Modello_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Portafogli_Modello_Converter.html"
     }
   }
