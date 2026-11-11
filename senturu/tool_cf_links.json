@@ -1,12 +1,12 @@
 {
-  "generato": "2026-11-09",
+  "generato": "2026-11-11",
   "links": {
     "sinottica": {
-      "tool": "https://senturu.github.io/Widiba/Sinottica_305_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Sinottica_306_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Sinottica_Converter.html"
     },
     "fondietf": {
-      "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_219_Interno.html",
+      "tool": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_220_Interno.html",
       "converter": "https://senturu.github.io/Widiba/Analitica_Fondi_ETF_Converter.html"
     },
     "etcetn": {
