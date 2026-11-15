@@ -257,9 +257,9 @@ const INFO={
  candela:['Candela','Fa scoccare la scintilla poco prima del punto morto superiore (anticipo d\'accensione): la combustione ha bisogno di qualche istante per svilupparsi.'],
  luce:['Luce di scarico','Finestra nella parete del cilindro. Quando il pistone scendendo la scopre, i gas combusti escono. La sua altezza decide la fasatura di scarico (qui si apre a circa '+Math.round(EXO)+'° dopo il PMS).'],
  travasi:['Travasi','Canali che collegano carter e cilindro. Quando il pistone li scopre (circa '+Math.round(TRO)+'° dopo il PMS), la miscela precompressa sale e "lava" il cilindro dai gas combusti.'],
- lamelle:['Pacco lamellare','Valvola a lamelle elastiche, automatica: si apre quando nel carter c\'è depressione (pistone che sale) e si richiude quando la pressione aumenta.'],
+ lamelle:['Pacco lamellare','Montato alla base del cilindro, manda la miscela giù nel carter (non sopra il pistone). È una valvola a lamelle elastiche, automatica: si apre quando nel carter c\'è depressione (pistone che sale) e si richiude quando la pressione aumenta.'],
  espansione:['Camera d\'espansione','Lo scarico "accordato" del 2 tempi: l\'onda di pressione riflessa dal cono di uscita rispinge nel cilindro la miscela fresca che stava scappando. Determina dove il motore "entra in coppia".'],
- carbu:['Carburatore','Dosa la benzina nell\'aria. Nel 2 tempi a miscela c\'è anche l\'olio, che lubrifica biella e pistone e poi brucia (da qui il fumo azzurrino).'],
+ carbu:['Carburatore','Sta all\'altezza della base del cilindro, ma la miscela che prepara finisce nel carter: da lì sale sopra il pistone attraverso i travasi. Dosa la benzina nell\'aria. Nel 2 tempi a miscela c\'è anche l\'olio, che lubrifica biella e pistone e poi brucia (da qui il fumo azzurrino).'],
  vin:['Valvola di aspirazione','Più grande di quella di scarico. Si apre poco prima del PMS e si chiude ben dopo il PMI per sfruttare l\'inerzia della colonna d\'aria.'],
  vex:['Valvola di scarico','Si apre prima del PMI (anticipo di scarico) e si chiude dopo il PMS: per un attimo entrambe le valvole sono aperte (incrocio).'],
  camme4:['Albero a camme','Gira a metà velocità dell\'albero motore: un ciclo completo dura 2 giri. Il lobo spinge la punteria e apre la valvola; a richiuderla ci pensa la molla.'],
@@ -382,8 +382,8 @@ function buildEngine(type){
 
   if(is2){
     // cilindro alettato
-    m.part(gBlock,vblock(6,8.4,4.6,2.6,.6),HM(0xa0a9b3),{info:'cil2',kind:'cilindro',label:'Cilindro',loff:[-4.6,7,0]});
-    for(let i=0;i<10;i++)m.part(gBlock,vblock(9,.2,5.0+i*.8,2.9,1.2),HM(0x949ea9),{info:'cil2',kind:'alette'});
+    m.part(gBlock,vblock(6,8.4,4.6,2.6,.6),HM(0xa0a9b3),{info:'cil2',kind:'cilindro',label:'Cilindro',loff:[3.6,11.6,0]});
+    for(let i=0;i<8;i++)m.part(gBlock,vblock(9,.2,7.0+i*.8,2.9,1.2),HM(0x949ea9),{info:'cil2',kind:'alette'});
     m.part(gBlock,new THREE.BoxGeometry(2.2,EX_TOP-EX_BOT,2.0),HM(0x8a939d),{pos:[3.7,(EX_TOP+EX_BOT)/2,0],info:'luce',kind:'luci'});
     m.part(gBlock,new THREE.BoxGeometry(.1,EX_TOP-EX_BOT,2.0),HM(0xff7a3d),{pos:[2.62,(EX_TOP+EX_BOT)/2,0],info:'luce',kind:'luci',label:'Luce di scarico',loff:[0,1.2,0]});
     [-1,1].forEach(s=>{
@@ -398,18 +398,19 @@ function buildEngine(type){
     m.part(gHead,vblock(7,1.6,HEAD_Y,0,.6),HM(0xaab3bc),{info:'testa2',kind:'testa',label:'Testata',loff:[-4.6,14,0]});
     [13.6,14.2].forEach(y=>m.part(gHead,vblock(9,.2,y,0,1.2),HM(0x9ea8b2),{info:'testa2',kind:'alette'}));
     spark=makePlug(m,gHead,14.6);
-    // aspirazione lamellare
-    const gR=m.eg([-5,0,0]);
-    m.part(gR,cylZ(.85,4.2).rotateX(-Math.PI/2).rotateZ(Math.PI/2),M(0x22262b,{metalness:.1,roughness:.8}),{pos:[-7,1,0],info:'lamelle',kind:'lamelle'});
-    m.part(gR,new THREE.BoxGeometry(2.2,2.5,2.5),M(0x7f8994),{pos:[-10.2,1,0],info:'carbu',kind:'carburatore',label:'Carburatore',loff:[0,1.8,0]});
-    m.part(gR,new THREE.CylinderGeometry(1.1,.8,1.2,24).rotateZ(Math.PI/2),M(0x9aa3ad),{pos:[-11.9,1,0],info:'carbu',kind:'carburatore'});
-    m.part(gR,new THREE.BoxGeometry(.45,2.3,2.2),M(0x2b3138),{pos:[-4.8,1,0],info:'lamelle',kind:'lamelle'});
-    const petals=[1.95,.05].map((y,i)=>{const p=new THREE.Group();p.position.set(-4.55,y,0);gR.add(p);m.part(p,new THREE.BoxGeometry(1.3,.07,1.8),M(0x2f6f7a,{metalness:.2,roughness:.5}),{pos:[.65,0,0],info:'lamelle',kind:'lamelle',label:i===0?'Lamelle':null,loff:[0,.9,0]});return p;});
+    // aspirazione lamellare alla base del cilindro
+    const gR=m.eg([-5,0,0]);const ig=new THREE.Group();ig.position.set(-3.2,6.0,0);ig.rotation.z=-.25;gR.add(ig);
+    m.part(ig,cylZ(.85,3.2).rotateX(-Math.PI/2).rotateZ(Math.PI/2),M(0x22262b,{metalness:.1,roughness:.8}),{pos:[-3.0,0,0],info:'lamelle',kind:'lamelle'});
+    m.part(ig,new THREE.BoxGeometry(2.2,2.5,2.5),M(0x7f8994),{pos:[-5.6,0,0],info:'carbu',kind:'carburatore',label:'Carburatore',loff:[0,1.8,0]});
+    m.part(ig,new THREE.CylinderGeometry(1.1,.8,1.2,24).rotateZ(Math.PI/2),M(0x9aa3ad),{pos:[-7.3,0,0],info:'carbu',kind:'carburatore'});
+    m.part(ig,new THREE.BoxGeometry(.45,2.3,2.2),M(0x2b3138),{pos:[-1.25,0,0],info:'lamelle',kind:'lamelle'});
+    const petals=[.95,-.95].map((y,i)=>{const p=new THREE.Group();p.position.set(-1.0,y,0);ig.add(p);m.part(p,new THREE.BoxGeometry(.8,.07,1.8),M(0x2f6f7a,{metalness:.2,roughness:.5}),{pos:[.4,0,0],info:'lamelle',kind:'lamelle',label:i===0?'Lamelle':null,loff:[0,.9,0]});return p;});
+    m.part(gBlock,tube([[-3.0,5.9,0],[-2.75,4.7,0],[-2.3,3.4,0],[-1.8,2.6,0]],.6),HM(0x38bdf8,.55),{info:'lamelle',kind:'lamelle',label:'Ingresso nel carter',loff:[-4.6,3.6,0],small:true});
     // gas nel carter
     const ccMat=new THREE.MeshStandardMaterial({color:0x38bdf8,transparent:true,opacity:.16,depthWrite:false});
     const ccGas=new THREE.Mesh(cylZ(3.6,5.8,40),ccMat);m.root.add(ccGas);m.hideOnExplode.push(ccGas);
     // flussi
-    const fIn=new Flow(m,[[-13,1,0],[-10,1,0],[-6,1,0],[-4.2,1,0],[-2.6,.2,0],[-.8,-2.3,0]],0x38bdf8,16);
+    const fIn=new Flow(m,[[-11,8,0],[-8.2,7.3,0],[-5,6.5,0],[-3.3,6.0,0],[-2.8,4.8,0],[-2.1,3.0,0],[-1.2,.8,0],[-.4,-1.6,0]],0x38bdf8,18);
     const fTr=[-1,1].map(s=>new Flow(m,[[1.8,-1.6,s*1.6],[.6,1.5,s*2.8],[-.8,3.6,s*3.05],[-.8,5.5,s*3.55],[-.8,7.3,s*3.4],[-.5,8.0,s*2.3],[-.1,9.6,s*.8],[.4,11,0]],0x2dd4bf,16));
     const d=[Math.cos(-.3),Math.sin(-.3)],ey=(EX_TOP+EX_BOT)/2;
     const fEx=new Flow(m,[[0,11.2,0],[1.4,9.8,0],[2.7,ey,0],[4.7,ey,0]].concat([3,6,9,12.5].map(s=>[4.7+d[0]*s,ey+d[1]*s,0])),0x9a8f86,20,.2);
