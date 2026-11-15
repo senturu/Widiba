@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Motori e trasmissione in 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0f13;--panel:#141920;--panel2:#10151b;--line:#242c36;--txt:#e7ecf1;--mut:#8b97a4;--acc:#ffb020;--in:#38bdf8;--ex:#ff7a3d;--tr:#2dd4bf;--ok:#4ade80;--bad:#f87171}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 Inter,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:18px 26px;padding:14px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:linear-gradient(180deg,#121820,#0c0f13)}
+h1{font:700 23px/1 'Barlow Condensed',sans-serif;letter-spacing:.05em;text-transform:uppercase;margin:0;white-space:nowrap}
+h1 span{color:var(--acc)}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 14px;border-radius:999px;font:600 13px Inter,sans-serif;cursor:pointer;transition:.15s}
+.tab:hover{color:var(--txt);border-color:#3a4654}
+.tab[aria-selected=true]{background:var(--acc);color:#14100a;border-color:var(--acc)}
+.tab.cmp{border-style:dashed}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:16px 20px 30px}
+@media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}}
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;height:min(66vh,720px);min-height:380px}
+.stage.cmp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media(max-width:760px){.stage{height:62vh}.stage.cmp{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr 1fr;height:96vh}}
+.view{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#1c2530 0%,#0e1217 72%)}
+.view[hidden]{display:none}
+.view canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.view canvas:active{cursor:grabbing}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;font:500 11px Inter,sans-serif;color:#e4eaf0;background:rgba(12,15,19,.8);border:1px solid #33404f;padding:2px 8px 2px 10px;border-radius:999px;white-space:nowrap;will-change:transform}
+.lbl::before{content:'';position:absolute;left:3px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:var(--acc)}
+.lbl.small{font-size:10px;padding:1px 6px 1px 9px;color:#c4ccd5}
+.badge{position:absolute;left:12px;top:12px;background:rgba(12,15,19,.82);border:1px solid var(--line);border-radius:12px;padding:9px 12px;max-width:min(330px,80%);pointer-events:none;backdrop-filter:blur(4px)}
+.bname{font:700 17px/1.1 'Barlow Condensed',sans-serif;letter-spacing:.05em;text-transform:uppercase}
+.bphase{display:flex;align-items:center;gap:7px;margin-top:5px;font-weight:600}
+.bphase i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.bsub{color:var(--mut);font-size:12px;margin-top:2px}
+.bang{font:500 12px 'JetBrains Mono',monospace;color:var(--mut);margin-top:3px}
+.bwarn{margin-top:6px;font-size:12px;color:#fecaca;background:rgba(248,113,113,.14);border:1px solid rgba(248,113,113,.4);padding:4px 7px;border-radius:7px}
+.bok{margin-top:6px;font-size:12px;color:#bbf7d0;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.35);padding:4px 7px;border-radius:7px}
+.bdiff{margin-top:6px;font-size:12px;color:#ffd58a}
+.hint{position:absolute;right:10px;bottom:8px;font-size:11px;color:#6f7b88;pointer-events:none;text-align:right}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:12px}
+.card h3{font:700 14px 'Barlow Condensed',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button.b{background:#1d2530;border:1px solid #2e3946;color:var(--txt);padding:7px 12px;border-radius:9px;font:600 13px Inter,sans-serif;cursor:pointer}
+button.b:hover{border-color:#4a5868}
+button.b.pri{background:var(--acc);color:#16110a;border-color:var(--acc)}
+.chip{background:transparent;border:1px solid #2e3946;color:var(--mut);padding:5px 10px;border-radius:999px;font:500 12px Inter,sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:rgba(255,176,32,.14);border-color:var(--acc);color:#ffd58a}
+label.sl{display:block;margin:10px 0 2px;font-size:12px;color:var(--mut)}
+label.sl b{float:right;color:var(--txt);font:500 12px 'JetBrains Mono',monospace}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select{width:100%;background:#1d2530;color:var(--txt);border:1px solid #2e3946;border-radius:9px;padding:7px 9px;font:500 13px Inter,sans-serif}
+.gears{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:6px}
+.gears button{padding:8px 0;border-radius:8px;background:#1d2530;border:1px solid #2e3946;color:var(--txt);font:700 15px 'Barlow Condensed',sans-serif;cursor:pointer}
+.gears button[aria-pressed=true]{background:var(--acc);color:#16110a;border-color:var(--acc)}
+.read{display:grid;grid-template-columns:1fr auto;gap:3px 10px;margin-top:10px;font-size:12.5px}
+.read span:nth-child(odd){color:var(--mut)}
+.read span:nth-child(even){font:500 12.5px 'JetBrains Mono',monospace;text-align:right}
+ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:7px 8px 7px 34px;border-radius:9px;color:#b8c2cc;font-size:13px;transition:.2s}
+ol.steps li::before{content:counter(s);position:absolute;left:8px;top:7px;width:19px;height:19px;border-radius:50%;background:#222b36;color:var(--mut);font:700 11px/19px Inter;text-align:center}
+ol.steps li.on{background:rgba(255,176,32,.1);color:var(--txt)}
+ol.steps li.on::before{background:var(--acc);color:#16110a}
+ol.steps b{color:var(--txt)}
+.note{font-size:12.5px;color:#ffd58a;background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.25);border-radius:9px;padding:8px 10px;margin-top:8px}
+#infoD{margin:0;color:#c3ccd5;font-size:13px}
+.below{margin-top:12px}
+.tl{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.tl canvas{width:100%;display:block;cursor:pointer}
+.tl .cap{font-size:11.5px;color:var(--mut);margin:2px 0 4px}
+.cmpgrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px}
+@media(max-width:860px){.cmpgrid{grid-template-columns:minmax(0,1fr)}}
+#chart{width:100%;height:230px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--mut);margin-top:6px}
+.legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:5px}
+.legend i.d{border-top-style:dashed}
+table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+table.cmp th,table.cmp td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{font:700 13px 'Barlow Condensed',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)}
+table.cmp td:first-child{color:var(--mut);width:24%}
+table.cmp tr.dif td:not(:first-child){color:#fff}
+table.cmp tr.dif td:first-child{color:#ffd58a}
+table.cmp tr.dif td:first-child::before{content:'● ';color:var(--acc)}
+.keydiff p{margin:0 0 8px;color:#c9d2db}
+.gt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+.gt td{padding:4px 4px;border-bottom:1px solid var(--line)}
+.gt td:last-child,.gt td:nth-child(3){text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px}
+.gt tr.on td{color:#ffd58a}
+.bar{height:6px;border-radius:3px;background:#2a3542;position:relative;min-width:60px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#56657a}
+.gt tr.on .bar i{background:var(--acc)}
+[hidden]{display:none!important}
+#err{position:fixed;inset:auto 10px 10px 10px;background:#3b1111;color:#fecaca;padding:10px;border-radius:9px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<header>
+  <h1>Motori <span>&amp;</span> trasmissione · 3D</h1>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" data-tab="2t" role="tab">2 tempi</button>
+    <button class="tab" data-tab="4t" role="tab">4 tempi</button>
+    <button class="tab" data-tab="desmo" role="tab">4 tempi Desmo</button>
+    <button class="tab" data-tab="trans" role="tab">Frizione e cambio</button>
+    <button class="tab cmp" data-tab="cmp" role="tab">⇄ Confronta</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <section>
+    <div class="stage" id="stage">
+      <div class="view" id="viewA"><canvas></canvas><div class="labels"></div><div class="badge"></div><div class="hint">Trascina: ruota · Rotella/pinch: zoom · Tasto destro o Shift: sposta · Clic su un pezzo: scheda</div></div>
+      <div class="view" id="viewB" hidden><canvas></canvas><div class="labels"></div><div class="badge"></div></div>
+    </div>
+
+    <div class="below tl" id="tlWrap">
+      <div class="cap">Fasi in funzione dell'angolo di manovella (2 giri = 720°). Clicca sulla barra per spostarti in un punto preciso del ciclo.</div>
+      <canvas id="timeline"></canvas>
+    </div>
+
+    <div id="cmpWrap" hidden>
+      <div class="cmpgrid">
+        <div class="card" style="margin:0">
+          <h3>Apertura di valvole e luci</h3>
+          <canvas id="chart"></canvas>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="card keydiff" style="margin:0">
+          <h3>Le differenze in breve</h3>
+          <div id="keydiff"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>Scheda di confronto <span style="text-transform:none;letter-spacing:0;font:400 12px Inter;color:#6f7b88">· in evidenza le righe che cambiano</span></h3>
+        <div style="overflow-x:auto"><table class="cmp" id="cmpTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card" id="cardCmp" hidden>
+      <h3>Cosa confrontare</h3>
+      <div class="row" style="flex-wrap:nowrap">
+        <select id="selA" aria-label="Motore A"></select>
+        <span style="color:var(--mut)">vs</span>
+        <select id="selB" aria-label="Motore B"></select>
+      </div>
+      <p style="font-size:12px;color:var(--mut);margin:8px 0 0">Stesso angolo di manovella nelle due viste. In arancione i componenti che ha solo quel motore.</p>
+    </div>
+
+    <div class="card">
+      <h3>Animazione</h3>
+      <div class="row">
+        <button class="b pri" id="btnPlay">❚❚ Pausa</button>
+        <button class="b" id="btnStep">+10°</button>
+        <button class="b" id="btnReset">Vista iniziale</button>
+      </div>
+      <label class="sl">Velocità animazione <b id="vSpeed"></b></label>
+      <input type="range" id="speed" min="0.05" max="1.5" step="0.05" value="0.35">
+      <label class="sl">Regime simulato <b id="vRpm"></b></label>
+      <input type="range" id="rpm" min="1000" max="17000" step="250" value="6000">
+      <div id="rpmNote" style="font-size:11.5px;color:#6f7b88;margin-top:3px">Oltre 13.000 giri le valvole a molla iniziano a flottare.</div>
+    </div>
+
+    <div class="card">
+      <h3>Vista</h3>
+      <label class="sl" style="margin-top:0">Esploso <b id="vExp"></b></label>
+      <input type="range" id="explode" min="0" max="1" step="0.01" value="0">
+      <div class="row" style="margin-top:10px">
+        <button class="chip" id="tSection" aria-pressed="true">Sezione</button>
+        <button class="chip" id="tXray" aria-pressed="false">Raggi X</button>
+        <button class="chip" id="tLabels" aria-pressed="true">Etichette</button>
+        <button class="chip" id="tDiff" aria-pressed="false">Evidenzia differenze</button>
+        <button class="chip" id="tSync" aria-pressed="true" hidden>Camere sincronizzate</button>
+      </div>
+      <label class="sl" id="cutLbl">Piano di taglio <b id="vCut"></b></label>
+      <input type="range" id="cut" min="-3" max="3" step="0.1" value="0">
+    </div>
+
+    <div class="card" id="cardTrans" hidden>
+      <h3>Frizione e cambio</h3>
+      <label class="sl" style="margin-top:0">Leva frizione <b id="vClutch"></b></label>
+      <input type="range" id="clutch" min="0" max="1" step="0.01" value="0">
+      <div style="font-size:12px;color:var(--mut);margin-top:8px">Marcia (sequenza reale: 1 · N · 2 · 3 · 4 · 5 · 6)</div>
+      <div class="gears" id="gears"></div>
+      <div class="row" style="margin-top:10px"><button class="chip" id="tTorque" aria-pressed="true">Percorso della coppia</button></div>
+      <div class="read" id="readout"></div>
+      <table class="gt" id="gearTable"></table>
+    </div>
+
+    <div class="card">
+      <h3 id="howT">Come funziona</h3>
+      <ol class="steps" id="steps"></ol>
+      <div id="howNote"></div>
+    </div>
+
+    <div class="card">
+      <h3>Componente</h3>
+      <div id="infoT" style="font-weight:600;margin-bottom:4px">Clicca un pezzo nel modello</div>
+      <p id="infoD">Ogni parte ha una scheda: cosa fa e perché è fatta così.</p>
+    </div>
+  </aside>
+</div>
+<div id="err"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+window.addEventListener('error',e=>{const d=document.getElementById('err');d.style.display='block';d.textContent='Errore: '+e.message;});
+if(!window.THREE){document.getElementById('err').style.display='block';document.getElementById('err').textContent='Impossibile caricare il motore 3D (three.js).';return;}
+
+/* ================= costanti e utilità ================= */
+const DEG=Math.PI/180, R=2.5, L=8, PT=1.8, HEAD_Y=13, LMAX=0.75, FLOAT_RPM=13000;
+const EX_TOP=9.75, EX_BOT=8.0, TR_TOP=8.35, TR_BOT=7.4;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t, mod=(a,n)=>((a%n)+n)%n;
+const $=s=>document.querySelector(s);
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+function pinY(thDeg){const t=thDeg*DEG,sx=R*Math.sin(t);return R*Math.cos(t)+Math.sqrt(L*L-sx*sx);}
+function topY(th){return pinY(th)+PT;}
+function frac(top,hi,lo){return clamp((hi-top)/(hi-lo),0,1);}
+function bump(x,a,b,p){for(const k of [0,720,-720]){const xx=x+k;if(xx>a&&xx<b)return Math.pow(Math.sin(Math.PI*(xx-a)/(b-a)),p);}return 0;}
+const VT={in:[-20,220,100],ex:[500,740,620]};
+function camLift(type,k,a){const v=VT[k];return LMAX*bump(a,v[0],v[1],type==='desmo'?0.9:1.6);}
+function floatF(type,rpm){return type==='4t'?clamp((rpm-FLOAT_RPM)/4000,0,1):0;}
+function valveLift(type,k,a,rpm){const base=camLift(type,k,a);const f=floatF(type,rpm);if(f<=0)return base;const v=VT[k];const lag=LMAX*bump(a-48*f,v[0],v[1],1.6)*(1+0.14*f);return Math.max(base,lag);}
+
+// angoli luci 2T (calcolati dalla geometria)
+function crossing(level){for(let t=0;t<=180;t+=0.1){if(topY(t)<level)return t;}return 180;}
+const EXO=crossing(EX_TOP), EXC=360-EXO, TRO=crossing(TR_TOP), TRC=360-TRO;
+
+const COL={fresh:new THREE.Color('#38bdf8'),comp:new THREE.Color('#2563eb'),flash:new THREE.Color('#fff4c2'),burn:new THREE.Color('#ff7a1a'),burnt:new THREE.Color('#a8502a'),exh:new THREE.Color('#8b8680'),mix:new THREE.Color('#5fb8c4')};
+const NAMES={'2t':'Motore 2 tempi','4t':'Motore 4 tempi','desmo':'4 tempi Desmodromico','trans':'Frizione e cambio'};
+const SHORT={'2t':'2 tempi','4t':'4 tempi','desmo':'Desmo'};
+
+/* segmenti di fase per la timeline (0..720) */
+function SEGS(k){
+  if(k==='2t'){const one=[[0,EXO,'Espansione','#ff7a1a'],[EXO,TRO,'Scarico','#8b8680'],[TRO,TRC,'Travaso','#2dd4bf'],[TRC,EXC,'Scarico aperto','#56677c'],[EXC,360,'Compressione','#2563eb']];return one.concat(one.map(s=>[s[0]+360,s[1]+360,s[2],s[3]]));}
+  return [[0,180,'Aspirazione','#38bdf8'],[180,360,'Compressione','#2563eb'],[360,540,'Scoppio / espansione','#ff7a1a'],[540,720,'Scarico','#8b8680']];
+}
+const IGN={'2t':[345,705],'4t':[345],'desmo':[345]};
+
+/* ================= info componenti ================= */
+const INFO={
+ carter2:['Carter-pompa','Nel 2 tempi il carter è chiuso a tenuta e lavora come una pompa: quando il pistone sale crea depressione e aspira miscela dalle lamelle; quando scende la comprime e la spinge su per i travasi.'],
+ carter4:['Carter','Contiene l\'albero motore e fa da coppa dell\'olio: nel 4 tempi la lubrificazione è un circuito separato, l\'olio non si brucia.'],
+ albero:['Albero motore','Trasforma il moto alterno del pistone in rotazione. Le masse a mezzaluna sono i contrappesi, che bilanciano le forze del manovellismo.'],
+ biella:['Biella','Collega il pistone (piede di biella, sullo spinotto) al perno di manovella (testa di biella). Lavora a trazione e compressione migliaia di volte al minuto.'],
+ pistone:['Pistone','Riceve la spinta dei gas di combustione. Le fasce elastiche fanno tenuta sul cilindro. Nel 2 tempi apre e chiude anche le luci: fa da valvola.'],
+ cil2:['Cilindro alettato','Raffreddato ad aria (le alette aumentano la superficie). Nelle pareti si aprono la luce di scarico e quelle di travaso: nessuna valvola.'],
+ cil4:['Cilindro','Guida il pistone. In questo modello è raffreddato a liquido: il blocco contiene le camicie d\'acqua.'],
+ testa2:['Testata','Nel 2 tempi è un semplice "tappo" alettato con la candela: niente valvole né alberi a camme.'],
+ testa4:['Testata','Chiude il cilindro e forma la camera di combustione. Ospita valvole, condotti di aspirazione e scarico, candela e distribuzione.'],
+ candela:['Candela','Fa scoccare la scintilla poco prima del punto morto superiore (anticipo d\'accensione): la combustione ha bisogno di qualche istante per svilupparsi.'],
+ luce:['Luce di scarico','Finestra nella parete del cilindro. Quando il pistone scendendo la scopre, i gas combusti escono. La sua altezza decide la fasatura di scarico (qui si apre a circa '+Math.round(EXO)+'° dopo il PMS).'],
+ travasi:['Travasi','Canali che collegano carter e cilindro. Quando il pistone li scopre (circa '+Math.round(TRO)+'° dopo il PMS), la miscela precompressa sale e "lava" il cilindro dai gas combusti.'],
+ lamelle:['Pacco lamellare','Valvola a lamelle elastiche, automatica: si apre quando nel carter c\'è depressione (pistone che sale) e si richiude quando la pressione aumenta.'],
+ espansione:['Camera d\'espansione','Lo scarico "accordato" del 2 tempi: l\'onda di pressione riflessa dal cono di uscita rispinge nel cilindro la miscela fresca che stava scappando. Determina dove il motore "entra in coppia".'],
+ carbu:['Carburatore','Dosa la benzina nell\'aria. Nel 2 tempi a miscela c\'è anche l\'olio, che lubrifica biella e pistone e poi brucia (da qui il fumo azzurrino).'],
+ vin:['Valvola di aspirazione','Più grande di quella di scarico. Si apre poco prima del PMS e si chiude ben dopo il PMI per sfruttare l\'inerzia della colonna d\'aria.'],
+ vex:['Valvola di scarico','Si apre prima del PMI (anticipo di scarico) e si chiude dopo il PMS: per un attimo entrambe le valvole sono aperte (incrocio).'],
+ camme4:['Albero a camme','Gira a metà velocità dell\'albero motore: un ciclo completo dura 2 giri. Il lobo spinge la punteria e apre la valvola; a richiuderla ci pensa la molla.'],
+ molla:['Molla valvola','Richiama e chiude la valvola. Ad altissimi regimi l\'inerzia della valvola vince la molla: la valvola non segue più la camma e "flotta". Prova a portare il regime oltre 13.000 giri.'],
+ punteria:['Punteria a bicchierino','Sta tra camma e valvola: riceve la spinta del lobo e trasmette il movimento allo stelo. Sotto c\'è lo spessore che regola il gioco valvole.'],
+ catena:['Distribuzione','Catena (o cinghia) che trascina gli alberi a camme. Gli ingranaggi delle camme hanno il doppio dei denti di quello sull\'albero motore: rapporto 2:1.'],
+ condotti:['Condotti in testata','Aspirazione (azzurro) dal corpo farfallato alla valvola, scarico (arancio) dalla valvola al collettore.'],
+ cammeD:['Camma di apertura','Lobo "classico": spinge il bilanciere di apertura che a sua volta preme sullo stelo e apre la valvola.'],
+ cammaC:['Camma di chiusura','Il lobo "rovesciato": è basso proprio dove quello di apertura è alto. Comanda il bilanciere di chiusura che riporta su la valvola: è ciò che rende il sistema desmodromico.'],
+ bilA:['Bilanciere di apertura','Leva a dito: la camma di apertura lo preme al centro e la punta spinge giù lo stelo della valvola.'],
+ bilC:['Bilanciere di chiusura','Leva a forcella che aggancia il collarino sullo stelo e tira su la valvola. Chiusura "comandata", senza molle: la valvola segue sempre il profilo della camma, anche a regimi altissimi.'],
+ collare:['Collarino (semianelli)','Il punto d\'appoggio sullo stelo su cui lavora la forcella del bilanciere di chiusura.'],
+ // trasmissione
+ tAlbero:['Albero motore','Porta l\'ingranaggio della trasmissione primaria. Qui gira al regime del motore.'],
+ tPrim:['Trasmissione primaria','Coppia di ingranaggi fissa tra albero motore e campana frizione: riduce i giri (qui circa 1,87:1) prima del cambio.'],
+ tCamp:['Campana frizione','Gira sempre insieme al motore (tramite la primaria). Ha delle scanalature in cui si incastrano i denti esterni dei dischi d\'attrito.'],
+ tAttr:['Dischi d\'attrito (conduttori)','Rivestiti di materiale d\'attrito, girano con la campana. Si alternano ai dischi in acciaio.'],
+ tAcc:['Dischi in acciaio (condotti)','Agganciati al mozzo e quindi all\'albero primario. Se sono pressati contro quelli d\'attrito, motore e cambio girano insieme.'],
+ tSping:['Spingidisco e molle','Le molle schiacciano il pacco dischi: frizione innestata. Tirando la leva lo spingidisco si allontana, i dischi si separano e il motore non trascina più il cambio.'],
+ tMozzo:['Mozzo frizione','Solidale con l\'albero primario del cambio; porta i dischi in acciaio.'],
+ tPrimario:['Albero primario','Riceve il moto dalla frizione. I suoi ingranaggi sono sempre in presa con quelli del secondario.'],
+ tSecondario:['Albero secondario','Esce dal cambio con il pignone. Gira solo quando un innesto blocca su di lui uno degli ingranaggi.'],
+ tIngP:['Ingranaggio del primario','Solidale con il primario (in questo schema). Piccolo per le marce basse, grande per quelle alte.'],
+ tIngS:['Ingranaggio del secondario','Sempre in presa con il suo gemello, ma gira "folle" sul secondario finché l\'innesto a denti non lo blocca. Il rapporto della marcia = denti condotto / denti conduttore.'],
+ tInn:['Innesto a denti','Manicotto che scorre sull\'albero e con i denti frontali blocca l\'ingranaggio scelto. Nelle moto spesso sono gli stessi ingranaggi a scorrere; qui è separato per chiarezza.'],
+ tForc:['Forcella del cambio','Spinge l\'innesto avanti e indietro. Il suo piolo scorre in una scanalatura del tamburo selettore.'],
+ tTamb:['Tamburo selettore','Ad ogni colpo di leva ruota di uno scatto: le scanalature sagomate spostano le forcelle. Per questo il cambio moto è sequenziale (1-N-2-3-4-5-6).'],
+ tPign:['Pignone','Ultimo ingranaggio: con la catena trasmette il moto alla corona della ruota posteriore.'],
+ tScat:['Scatola del cambio','Il carter che contiene il cambio. Spesso è un tutt\'uno con quello del motore.']
+};
+const KIND_NAME={luci:'luci nel cilindro',travasi:'travasi',lamelle:'lamelle',espansione:'camera d\'espansione',alette:'alette di raffreddamento',carburatore:'carburatore',valvola:'valvole',['albero-camme']:'alberi a camme',molla:'molle valvola',punteria:'punterie',catena:'catena distribuzione',condotti:'condotti in testata',['camma-chiusura']:'camme di chiusura',['bilanciere-apertura']:'bilancieri di apertura',['bilanciere-chiusura']:'bilancieri di chiusura',['collare-desmo']:'collarini',['carter-pompa']:'carter-pompa'};
+const KINDS={
+ '2t':['carter','albero-motore','biella','pistone','cilindro','testa','candela','luci','travasi','lamelle','espansione','alette','carburatore','carter-pompa'],
+ '4t':['carter','albero-motore','biella','pistone','cilindro','testa','candela','valvola','albero-camme','molla','punteria','catena','condotti'],
+ 'desmo':['carter','albero-motore','biella','pistone','cilindro','testa','candela','valvola','albero-camme','camma-chiusura','bilanciere-apertura','bilanciere-chiusura','collare-desmo','catena','condotti']
+};
+
+/* ================= geometrie ================= */
+function M(color,o){return new THREE.MeshStandardMaterial(Object.assign({color,metalness:.55,roughness:.38},o||{}));}
+function HM(color,op){op=op==null?1:op;const m=new THREE.MeshStandardMaterial({color,metalness:.25,roughness:.62,side:THREE.DoubleSide});m.userData.housing=true;m.userData.baseOpacity=op;if(op<1){m.transparent=true;m.opacity=op;m.depthWrite=false;}return m;}
+function cylZ(r,len,seg){const g=new THREE.CylinderGeometry(r,r,len,seg||24);g.rotateX(Math.PI/2);return g;}
+function rrect(s,x,y,w,h,r){s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);}
+function holeCircle(r){const p=new THREE.Path();p.absarc(0,0,r,0,Math.PI*2,true);return p;}
+// prisma verticale (asse Y) a base quadrata con foro
+function vblock(w,h,y0,hole,rad){const s=new THREE.Shape();rrect(s,-w/2,-w/2,w,w,rad==null?0.5:rad);if(hole)s.holes.push(holeCircle(hole));const g=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false,curveSegments:28});g.rotateX(-Math.PI/2);g.translate(0,y0,0);return g;}
+function gearGeo(r,teeth,w,hole){const s=new THREE.Shape();const h=Math.min(0.3,r*0.2);const n=teeth;for(let i=0;i<n;i++){const a0=i/n*Math.PI*2,da=Math.PI*2/n;const pts=[[r-h,a0],[r,a0+da*.2],[r,a0+da*.5],[r-h,a0+da*.7]];pts.forEach(([rr,a],j)=>{const x=rr*Math.cos(a),y=rr*Math.sin(a);if(i===0&&j===0)s.moveTo(x,y);else s.lineTo(x,y);});}
+  s.holes.push(holeCircle(hole||0.3));const g=new THREE.ExtrudeGeometry(s,{depth:w,bevelEnabled:false,curveSegments:8});g.translate(0,0,-w/2);return g;}
+function ringGeo(ro,ri,t,tabs,tabH){const s=new THREE.Shape();if(tabs){const N=tabs*8;for(let i=0;i<=N;i++){const a=i/N*Math.PI*2;const f=i%8;const r=(f>=2&&f<=5)?ro+tabH:ro;const x=r*Math.cos(a),y=r*Math.sin(a);if(i===0)s.moveTo(x,y);else s.lineTo(x,y);}}else s.absarc(0,0,ro,0,Math.PI*2,false);
+  s.holes.push(holeCircle(ri));const g=new THREE.ExtrudeGeometry(s,{depth:t,bevelEnabled:false,curveSegments:40});g.translate(0,0,-t/2);return g;}
+function webGeo(rc,rp,rb,t){const s=new THREE.Shape();s.moveTo(-rc,0);s.absarc(0,0,rc,Math.PI,2*Math.PI,false);s.lineTo(rb,rp);s.absarc(0,rp,rb,0,Math.PI,false);s.lineTo(-rc,0);const g=new THREE.ExtrudeGeometry(s,{depth:t,bevelEnabled:false,curveSegments:20});g.translate(0,0,-t/2);return g;}
+function camGeo(rFn,w){const s=new THREE.Shape();const N=120;for(let i=0;i<N;i++){const phi=-Math.PI+i/N*Math.PI*2;const r=rFn(phi);const x=r*Math.sin(phi),y=-r*Math.cos(phi);if(i===0)s.moveTo(x,y);else s.lineTo(x,y);}s.holes.push(holeCircle(0.18));const g=new THREE.ExtrudeGeometry(s,{depth:w,bevelEnabled:false});g.translate(0,0,-w/2);return g;}
+class Helix extends THREE.Curve{constructor(r,turns){super();this.r=r;this.turns=turns;}getPoint(t,tg){tg=tg||new THREE.Vector3();const a=t*this.turns*Math.PI*2;return tg.set(this.r*Math.cos(a),t,this.r*Math.sin(a));}}
+function tube(pts,r,closed){return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>V3(p[0],p[1],p[2])),!!closed),64,r,12,!!closed);}
+
+/* ================= modello e flussi ================= */
+class Model{
+  constructor(key){this.key=key;this.root=new THREE.Group();this.pickables=[];this.housingMats=[];this.labels=[];this.egs=[];this.flows=[];this.phaseInfo={};this.clipNormal=V3(0,0,-1);this.hideOnExplode=[];}
+  eg(dir){const g=new THREE.Group();g.userData.dir=V3(dir[0],dir[1],dir[2]);this.root.add(g);this.egs.push(g);return g;}
+  part(parent,geo,mat,o){o=o||{};const ms=new THREE.Mesh(geo,mat);ms.userData={info:o.info,kind:o.kind,housing:!!mat.userData.housing};if(o.pos)ms.position.set(o.pos[0],o.pos[1],o.pos[2]);if(o.rot)ms.rotation.set(o.rot[0],o.rot[1],o.rot[2]);parent.add(ms);if(mat.userData.housing)this.housingMats.push(mat);if(o.pick!==false)this.pickables.push(ms);if(o.label)this.label(o.label,ms,o.loff,o.small);return ms;}
+  label(text,obj,off,small){this.labels.push({text,obj,off:off?V3(off[0],off[1],off[2]):V3(0,0,0),small:!!small});}
+  applyExplode(e){for(const g of this.egs)g.position.copy(g.userData.dir).multiplyScalar(e);const show=e<0.08;for(const o of this.hideOnExplode)o.visible=show;}
+}
+class Flow{
+  constructor(model,pts,color,n,size){this.curve=new THREE.CatmullRomCurve3(pts.map(p=>V3(p[0],p[1],p[2])));this.len=this.curve.getLength();this.n=n||18;
+    const mat=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.55,transparent:true,opacity:.9,depthWrite:false});
+    this.mesh=new THREE.InstancedMesh(new THREE.SphereGeometry(size||0.17,10,8),mat,this.n);this.mesh.frustumCulled=false;model.root.add(this.mesh);model.hideOnExplode.push(this.mesh);
+    this.t=Array.from({length:this.n},(_,i)=>i/this.n+Math.random()*0.02);this.k=0;this.d=new THREE.Object3D();this.update(0,0,0);}
+  update(dt,intensity,speed){this.k+=(intensity-this.k)*Math.min(1,dt*10);for(let i=0;i<this.n;i++){this.t[i]=(this.t[i]+dt*speed*(0.25+intensity)*9/this.len)%1;if(!(this.t[i]>=0))this.t[i]=0;const p=this.curve.getPointAt(Math.min(this.t[i],.9995));this.d.position.copy(p);const s=Math.max(0.0001,this.k*Math.pow(Math.sin(Math.PI*this.t[i]),0.4));this.d.scale.setScalar(s);this.d.updateMatrix();this.mesh.setMatrixAt(i,this.d.matrix);}this.mesh.instanceMatrix.needsUpdate=true;}
+}
+function makePlug(m,parent,yb){
+  const g=new THREE.Group();parent.add(g);
+  m.part(g,new THREE.CylinderGeometry(.32,.32,yb-HEAD_Y,16),M(0xa7b0ba),{pos:[0,(yb+HEAD_Y)/2,0],info:'candela',kind:'candela'});
+  m.part(g,new THREE.CylinderGeometry(.55,.55,.5,6),M(0xc9ced4),{pos:[0,yb+.25,0],info:'candela',kind:'candela'});
+  m.part(g,new THREE.CylinderGeometry(.3,.36,1.3,16),M(0xf2efe8,{metalness:.05,roughness:.4}),{pos:[0,yb+1.15,0],info:'candela',kind:'candela',label:'Candela',loff:[0,.9,0]});
+  m.part(g,new THREE.CylinderGeometry(.16,.16,.45,10),M(0x9aa3ad),{pos:[0,yb+2.0,0],info:'candela',kind:'candela'});
+  const sm=new THREE.MeshStandardMaterial({color:0xbfe3ff,emissive:0x9fd4ff,emissiveIntensity:2,transparent:true,opacity:.95});
+  const spark=new THREE.Mesh(new THREE.SphereGeometry(.28,12,10),sm);spark.position.y=HEAD_Y-.05;parent.add(spark);return spark;
+}
+
+/* ================= costruzione motori ================= */
+function buildEngine(type){
+  const m=new Model(type), is2=type==='2t', isD=type==='desmo';
+  m.cam={target:[0,isD?9:8.5,0],r:isD?50:47,th:0.62,ph:1.25};m.ez=.45;m.ey=4;
+  const gCase=m.eg([0,0,0]),gCrank=m.eg([0,-5.5,0]),gRod=m.eg([0,-2.6,0]),gPist=m.eg([0,2.6,0]),gBlock=m.eg([0,5.2,0]),gHead=m.eg([0,7.8,0]),gVal=m.eg([0,10.5,0]),gCam=m.eg([0,13.2,0]);
+
+  // --- carter
+  const cs=new THREE.Shape();rrect(cs,-4.6,-4.6,9.2,9.2,1.6);
+  const hp=new THREE.Path();const a0=Math.atan2(2.58,2.65);hp.moveTo(2.65,4.45);hp.lineTo(2.65,2.58);hp.absarc(0,0,3.7,a0,Math.PI-a0,true);hp.lineTo(-2.65,4.45);hp.lineTo(2.65,4.45);cs.holes.push(hp);
+  const ccg=new THREE.ExtrudeGeometry(cs,{depth:6,bevelEnabled:false,curveSegments:28});ccg.translate(0,0,-3);
+  m.part(gCase,ccg,HM(0x8d97a2),{info:is2?'carter2':'carter4',kind:is2?'carter-pompa':'carter',label:is2?'Carter-pompa':'Carter',loff:[-4.2,-3.6,0]});
+
+  // --- albero motore
+  const crank=new THREE.Group();gCrank.add(crank);
+  const cm=()=>M(0x6c7682,{metalness:.7,roughness:.32});
+  m.part(crank,webGeo(3.0,R,1.0,.5),cm(),{pos:[0,0,.95],info:'albero',kind:'albero-motore',label:'Albero motore',loff:[0,-3.4,2]});
+  m.part(crank,webGeo(3.0,R,1.0,.5),cm(),{pos:[0,0,-.95],info:'albero',kind:'albero-motore'});
+  m.part(crank,cylZ(.5,1.5),cm(),{pos:[0,R,0],info:'albero',kind:'albero-motore'});
+  m.part(crank,cylZ(.6,2.4),cm(),{pos:[0,0,2.4],info:'albero',kind:'albero-motore'});
+  if(is2){m.part(crank,cylZ(.6,2.4),cm(),{pos:[0,0,-2.4],info:'albero',kind:'albero-motore'});}
+  else{m.part(crank,cylZ(.6,3.0),cm(),{pos:[0,0,-2.7],info:'albero',kind:'albero-motore'});m.part(crank,gearGeo(.8,10,.35),M(0x3b434d),{pos:[0,0,-3.95],info:'catena',kind:'catena'});}
+
+  // --- biella
+  const rod=new THREE.Group();gRod.add(rod);const rm=()=>M(0x8792a0,{metalness:.75,roughness:.3});
+  m.part(rod,new THREE.TorusGeometry(.72,.25,10,28),rm(),{info:'biella',kind:'biella'});
+  m.part(rod,new THREE.BoxGeometry(.52,L-1.5,.42),rm(),{pos:[0,L/2,0],info:'biella',kind:'biella',label:'Biella',loff:[.6,0,0]});
+  m.part(rod,new THREE.TorusGeometry(.48,.18,8,22),rm(),{pos:[0,L,0],info:'biella',kind:'biella'});
+
+  // --- pistone
+  const piston=new THREE.Group();gPist.add(piston);
+  m.part(piston,new THREE.CylinderGeometry(2.5,2.5,2.8,44),M(0xd5dade,{metalness:.5,roughness:.3}),{pos:[0,.4,0],info:'pistone',kind:'pistone',label:'Pistone',loff:[2.6,.6,0]});
+  (is2?[1.45,1.15]:[1.5,1.2,.9]).forEach(y=>{const g=new THREE.TorusGeometry(2.5,.055,6,48);g.rotateX(Math.PI/2);m.part(piston,g,M(0x3b434d),{pos:[0,y,0],info:'pistone',kind:'pistone'});});
+  m.part(piston,cylZ(.35,4.3),M(0x59626c),{info:'pistone',kind:'pistone'});
+
+  // --- gas in camera
+  const gasMat=new THREE.MeshStandardMaterial({color:0x38bdf8,transparent:true,opacity:.4,depthWrite:false,side:THREE.DoubleSide});
+  const gas=new THREE.Mesh(new THREE.CylinderGeometry(2.55,2.55,1,40,1,true),gasMat);m.root.add(gas);m.hideOnExplode.push(gas);
+  const gasCap=new THREE.Mesh(new THREE.CircleGeometry(2.55,40),gasMat);gasCap.rotation.x=-Math.PI/2;gas.add(gasCap);gasCap.position.y=-.5;
+
+  let spark, upd2=null, upd4=null;
+
+  if(is2){
+    // cilindro alettato
+    m.part(gBlock,vblock(6,8.4,4.6,2.6,.6),HM(0xa0a9b3),{info:'cil2',kind:'cilindro',label:'Cilindro',loff:[-4.6,7,0]});
+    for(let i=0;i<10;i++)m.part(gBlock,vblock(9,.2,5.0+i*.8,2.9,1.2),HM(0x949ea9),{info:'cil2',kind:'alette'});
+    m.part(gBlock,new THREE.BoxGeometry(2.2,EX_TOP-EX_BOT,2.0),HM(0x8a939d),{pos:[3.7,(EX_TOP+EX_BOT)/2,0],info:'luce',kind:'luci'});
+    m.part(gBlock,new THREE.BoxGeometry(.1,EX_TOP-EX_BOT,2.0),HM(0xff7a3d),{pos:[2.62,(EX_TOP+EX_BOT)/2,0],info:'luce',kind:'luci',label:'Luce di scarico',loff:[0,1.2,0]});
+    [-1,1].forEach(s=>{
+      m.part(gBlock,new THREE.BoxGeometry(1.8,TR_TOP-TR_BOT,.1),HM(0x2dd4bf),{pos:[-.6,(TR_TOP+TR_BOT)/2,s*2.62],info:'travasi',kind:'travasi'});
+      m.part(gBlock,tube([[-.8,3.4,s*3.0],[-.8,5.4,s*3.6],[-.8,7.2,s*3.45],[-.6,7.9,s*2.7]],.42),HM(0x2dd4bf,.75),{info:'travasi',kind:'travasi',label:s<0?'Travaso':null,loff:[-1,0,0]});
+    });
+    // espansione
+    const pipe=new THREE.Group();pipe.position.set(4.75,(EX_TOP+EX_BOT)/2,0);pipe.rotation.z=-(Math.PI/2+.3);gBlock.add(pipe);
+    const lp=[[.7,0],[.76,1.2],[1.2,3],[1.75,5],[1.85,6.3],[1.85,7.3],[1.2,9],[.45,10.4],[.4,12.4]].map(p=>new THREE.Vector2(p[0],p[1]));
+    m.part(pipe,new THREE.LatheGeometry(lp,36),M(0x4a525c,{metalness:.85,roughness:.28,side:THREE.DoubleSide}),{info:'espansione',kind:'espansione',label:"Camera d'espansione",loff:[2.5,2.2,0]});
+    // testata
+    m.part(gHead,vblock(7,1.6,HEAD_Y,0,.6),HM(0xaab3bc),{info:'testa2',kind:'testa',label:'Testata',loff:[-4.6,14,0]});
+    [13.6,14.2].forEach(y=>m.part(gHead,vblock(9,.2,y,0,1.2),HM(0x9ea8b2),{info:'testa2',kind:'alette'}));
+    spark=makePlug(m,gHead,14.6);
+    // aspirazione lamellare
+    const gR=m.eg([-5,0,0]);
+    m.part(gR,cylZ(.85,4.2).rotateX(-Math.PI/2).rotateZ(Math.PI/2),M(0x22262b,{metalness:.1,roughness:.8}),{pos:[-7,1,0],info:'lamelle',kind:'lamelle'});
+    m.part(gR,new THREE.BoxGeometry(2.2,2.5,2.5),M(0x7f8994),{pos:[-10.2,1,0],info:'carbu',kind:'carburatore',label:'Carburatore',loff:[0,1.8,0]});
+    m.part(gR,new THREE.CylinderGeometry(1.1,.8,1.2,24).rotateZ(Math.PI/2),M(0x9aa3ad),{pos:[-11.9,1,0],info:'carbu',kind:'carburatore'});
+    m.part(gR,new THREE.BoxGeometry(.45,2.3,2.2),M(0x2b3138),{pos:[-4.8,1,0],info:'lamelle',kind:'lamelle'});
+    const petals=[1.95,.05].map((y,i)=>{const p=new THREE.Group();p.position.set(-4.55,y,0);gR.add(p);m.part(p,new THREE.BoxGeometry(1.3,.07,1.8),M(0x2f6f7a,{metalness:.2,roughness:.5}),{pos:[.65,0,0],info:'lamelle',kind:'lamelle',label:i===0?'Lamelle':null,loff:[0,.9,0]});return p;});
+    // gas nel carter
+    const ccMat=new THREE.MeshStandardMaterial({color:0x38bdf8,transparent:true,opacity:.16,depthWrite:false});
+    const ccGas=new THREE.Mesh(cylZ(3.6,5.8,40),ccMat);m.root.add(ccGas);m.hideOnExplode.push(ccGas);
+    // flussi
+    const fIn=new Flow(m,[[-13,1,0],[-10,1,0],[-6,1,0],[-4.2,1,0],[-2.6,.2,0],[-.8,-2.3,0]],0x38bdf8,16);
+    const fTr=[-1,1].map(s=>new Flow(m,[[1.8,-1.6,s*1.6],[.6,1.5,s*2.8],[-.8,3.6,s*3.05],[-.8,5.5,s*3.55],[-.8,7.3,s*3.4],[-.5,8.0,s*2.3],[-.1,9.6,s*.8],[.4,11,0]],0x2dd4bf,16));
+    const d=[Math.cos(-.3),Math.sin(-.3)],ey=(EX_TOP+EX_BOT)/2;
+    const fEx=new Flow(m,[[0,11.2,0],[1.4,9.8,0],[2.7,ey,0],[4.7,ey,0]].concat([3,6,9,12.5].map(s=>[4.7+d[0]*s,ey+d[1]*s,0])),0x9a8f86,20,.2);
+    upd2=(st,dt,a2,top)=>{
+      const ex=frac(top,EX_TOP,EX_BOT),tr=frac(top,TR_TOP,TR_BOT),down=a2<180;
+      const reed=bump(a2,195,350,.8);
+      petals[0].rotation.z=-.82+.6*reed;petals[1].rotation.z=.82-.6*reed;
+      const sp=st.playing?st.speed:0;fIn.update(dt,reed,sp);fTr.forEach(f=>f.update(dt,tr,sp));fEx.update(dt,ex,sp);
+      ccMat.color.copy(down?COL.fresh.clone().lerp(COL.comp,a2/180):COL.fresh);ccMat.opacity=down?.14+.12*a2/180:.12;
+      let col,op=.42,emi=.15,name,cs;
+      if(a2>=350||a2<22){col=COL.flash.clone().lerp(COL.burn,a2>=350?0:a2/22);emi=1.6;op=.8;name='Scoppio';}
+      else if(down&&ex===0){col=COL.burn.clone().lerp(COL.burnt,(a2-22)/(EXO-22));emi=.8-.6*(a2/EXO);op=.6;name='Espansione';}
+      else if(down&&tr===0){col=COL.exh;name='Scarico';op=.45;}
+      else if(tr>0){col=COL.exh.clone().lerp(COL.mix,(a2-TRO)/(TRC-TRO));name='Travaso e lavaggio';op=.45;}
+      else if(ex>0){col=COL.mix.clone();name='Scarico ancora aperto';op=.42;cs='Un po\' di miscela fresca scappa allo scarico: la camera d\'espansione ne rimanda indietro una parte.';}
+      else{col=COL.fresh.clone().lerp(COL.comp,(a2-EXC)/(360-EXC));name='Compressione';op=.42+.2*(a2-EXC)/(360-EXC);}
+      const ign=a2>=336&&a2<350;
+      return {col,op,emi,name,sub:'Nel carter: '+(down?'precompressione (lamelle chiuse)':'aspirazione (lamelle aperte)'),cs,ign,phaseCol:'#'+col.getHexString()};
+    };
+  } else {
+    // ---- 4 tempi / desmo
+    m.part(gBlock,vblock(6.8,8.4,4.6,2.6,.5),HM(0x9ba5af),{info:'cil4',kind:'cilindro',label:'Cilindro',loff:[-3.6,7.5,0]});
+    const headW=isD?7.4:6.8;
+    m.part(gHead,vblock(headW,2.2,HEAD_Y,0,.5),HM(0xb3bcc5),{info:'testa4',kind:'testa',label:'Testata',loff:[-headW/2-.3,14.2,0]});
+    m.part(gHead,tube([[-1.25,13.15,0],[-1.6,14.1,0],[-3.2,14.8,0],[-5.4,15.0,0]],.68),HM(0x4a9fd0),{info:'condotti',kind:'condotti'});
+    m.part(gHead,tube([[1.25,13.15,0],[1.6,14.1,0],[3.2,14.75,0],[5.4,14.8,0]],.62),HM(0xd0763e),{info:'condotti',kind:'condotti'});
+    m.part(gHead,new THREE.BoxGeometry(isD?13:6.8,isD?5:4.2,6.8),HM(0x9fb0c2,.13),{pos:[0,isD?17.7:17.3,0],info:'testa4',kind:'testa',pick:false});
+    if(isD)[-1,1].forEach(s=>{m.part(gHead,new THREE.BoxGeometry(.7,2.4,1.9),HM(0xa9b2bb),{pos:[s*4.8,16.4,-.3],info:'testa4',kind:'testa'});});
+    spark=makePlug(m,gHead,15.2);
+    const valves={},springs={},cams={},rockA={},rockC={};
+    [['in',-1.25,-1],['ex',1.25,1]].forEach(([k,xv,s])=>{
+      const col=k==='in'?0x8fc3e8:0xe39a6b;
+      const vg=new THREE.Group();vg.position.x=xv;gVal.add(vg);valves[k]=vg;vg.userData.meshes=[];
+      const vi=k==='in'?'vin':'vex';
+      vg.userData.meshes.push(m.part(vg,new THREE.CylinderGeometry(.62,.95,.24,32),M(col),{pos:[0,13.1,0],info:vi,kind:'valvola',label:k==='in'?'Valvola aspirazione':'Valvola scarico',loff:[s*.4,-1.1,2.4]}));
+      vg.userData.meshes.push(m.part(vg,new THREE.CylinderGeometry(.14,.14,4.3,12),M(col),{pos:[0,15.3,0],info:vi,kind:'valvola'}));
+      if(!isD){
+        m.part(vg,new THREE.CylinderGeometry(.62,.62,.6,24),M(0x5f6a76),{pos:[0,17.5,0],info:'punteria',kind:'punteria',label:k==='in'?'Punteria':null,loff:[-1,.3,0],small:true});
+        m.part(vg,new THREE.CylinderGeometry(.55,.55,.12,20),M(0x5f6a76),{pos:[0,16.6,0],info:'molla',kind:'molla'});
+        const sp=m.part(gVal,new THREE.TubeGeometry(new Helix(.44,6),140,.065,6,false),M(0x44b86a,{metalness:.4}),{pos:[xv,15.2,0],info:'molla',kind:'molla',label:k==='ex'?'Molla valvola':null,loff:[1.2,.6,0]});springs[k]=sp;
+        const cg=new THREE.Group();cg.position.set(xv,18.4,0);gCam.add(cg);cams[k]=cg;
+        m.part(cg,cylZ(.3,7.8),M(0x7a838d),{info:'camme4',kind:'albero-camme'});
+        m.part(cg,camGeo(phi=>.6+camLift('4t',k,VT[k][2]+2*phi/DEG),.7),M(0xd8b04a,{metalness:.7}),{info:'camme4',kind:'albero-camme',label:k==='in'?'Albero a camme':null,loff:[0,1.6,0]});
+        m.part(cg,gearGeo(1.0,18,.3),M(0x3b434d),{pos:[0,0,-3.95],info:'catena',kind:'catena'});
+      } else {
+        m.part(vg,new THREE.CylinderGeometry(.42,.42,.15,20),M(0xe0533d),{pos:[0,16.0,0],info:'collare',kind:'collare-desmo'});
+        m.part(vg,new THREE.CylinderGeometry(.2,.2,.12,12),M(0x9aa3ad),{pos:[0,17.36,0],info:vi,kind:'valvola'});
+        const cx=xv+s*2.4;
+        const cg=new THREE.Group();cg.position.set(cx,19.0,0);gCam.add(cg);cams[k]=cg;
+        m.part(cg,cylZ(.32,7.8),M(0x7a838d),{info:'cammeD',kind:'albero-camme'});
+        m.part(cg,camGeo(phi=>1.3+camLift('desmo',k,VT[k][2]+2*phi/DEG)/2,.48),M(0xd8b04a,{metalness:.7}),{pos:[0,0,-.55],info:'cammeD',kind:'albero-camme',label:k==='in'?'Camma apertura':null,loff:[0,2.0,-.6],small:true});
+        m.part(cg,camGeo(phi=>1.5-camLift('desmo',k,VT[k][2]+2*phi/DEG),.48),M(0xe0533d,{metalness:.6}),{pos:[0,0,.55],info:'cammaC',kind:'camma-chiusura',label:k==='ex'?'Camma chiusura':null,loff:[0,2.0,.6],small:true});
+        m.part(cg,gearGeo(1.0,18,.3),M(0x3b434d),{pos:[0,0,-3.95],info:'catena',kind:'catena'});
+        // bilanciere apertura (a dito)
+        const ra=new THREE.Group();ra.position.set(xv+s*4.8,17.55,-.55);gVal.add(ra);rockA[k]=ra;
+        m.part(ra,new THREE.BoxGeometry(4.8,.3,.46),M(0xf0a23a,{metalness:.6}),{pos:[-s*2.4,0,0],info:'bilA',kind:'bilanciere-apertura',label:k==='in'?'Bilanciere apertura':null,loff:[0,.3,-.4]});
+        m.part(ra,cylZ(.24,.8),M(0x59626c),{info:'bilA',kind:'bilanciere-apertura'});
+        // bilanciere chiusura (a forcella)
+        const rc=new THREE.Group();rc.position.set(xv+s*1.2,16.625,.55);gVal.add(rc);rockC[k]=rc;
+        const bar=m.part(rc,new THREE.BoxGeometry(2.86,.24,.4),M(0xe0533d,{metalness:.6}),{info:'bilC',kind:'bilanciere-chiusura',label:k==='ex'?'Bilanciere chiusura':null,loff:[.6,-1.0,.4]});
+        bar.rotation.z=Math.atan2(.775,s*1.2);
+        m.part(rc,new THREE.BoxGeometry(.75,.15,1.25),M(0xe0533d,{metalness:.6}),{pos:[-s*1.2,-.775,-.5],info:'bilC',kind:'bilanciere-chiusura'});
+        m.part(rc,cylZ(.2,.5),M(0xe0533d,{metalness:.6}),{pos:[s*1.2,.775,0],info:'bilC',kind:'bilanciere-chiusura'});
+        m.part(rc,cylZ(.2,.8),M(0x59626c),{info:'bilC',kind:'bilanciere-chiusura'});
+      }
+    });
+    // catena distribuzione
+    const cx=isD?3.65:1.25,cy=isD?19.0:18.4;
+    const cpts=[[0,-.85],[.85,0],[cx+1.05,cy],[cx,cy+1.05],[-cx,cy+1.05],[-cx-1.05,cy],[-.85,0]].map(p=>V3(p[0],p[1],-3.95));
+    const ccurve=new THREE.CatmullRomCurve3(cpts,true,'centripetal');const clen=ccurve.getLength();
+    const NL=Math.round(clen/.36);const chain=new THREE.InstancedMesh(new THREE.BoxGeometry(.3,.12,.3),M(0x6b7480,{metalness:.8}),NL);chain.frustumCulled=false;m.root.add(chain);m.hideOnExplode.push(chain);
+    const chainLbl=new THREE.Object3D();chainLbl.position.set(-cx-1.1,cy*.55,-3.95);m.root.add(chainLbl);m.hideOnExplode.push(chainLbl);m.label('Catena distribuzione',chainLbl,[0,0,0],true);
+    const dmy=new THREE.Object3D();
+    const fIn=new Flow(m,[[-6.4,15.0,0],[-3.4,14.85,0],[-1.7,14.15,0],[-1.25,13.0,0],[-.8,11.3,0]],0x38bdf8,16);
+    const fEx=new Flow(m,[[.8,11.3,0],[1.25,13.0,0],[1.7,14.1,0],[3.4,14.75,0],[6.6,14.8,0]],0x9a8f86,16,.19);
+    upd4=(st,dt,a,top)=>{
+      const lin=valveLift(type,'in',a,st.rpm),lex=valveLift(type,'ex',a,st.rpm);const f=floatF(type,st.rpm);
+      const L2={in:lin,ex:lex};
+      for(const k of ['in','ex']){
+        const l=L2[k];valves[k].position.y=-l;valves[k].userData.meshes.forEach(ms=>ms.userData.floatRed=f>0&&l>camLift(type,k,a)+.03);
+        cams[k].rotation.z=-(st.theta-VT[k][2])/2*DEG;
+        if(!isD)springs[k].scale.y=1.4-l;
+        else{const s=k==='in'?-1:1;rockA[k].rotation.z=s*Math.asin(clamp(l/4.8,-1,1));rockC[k].rotation.z=s*l/1.2;}
+      }
+      const off=mod(st.theta*DEG*.8/clen,1);
+      for(let i=0;i<NL;i++){const u=mod(i/NL-off,1);const uu=Math.min(u,.9995),p=ccurve.getPointAt(uu),t=ccurve.getTangentAt(uu);dmy.position.copy(p);dmy.rotation.set(0,0,Math.atan2(t.y,t.x));dmy.updateMatrix();chain.setMatrixAt(i,dmy.matrix);}chain.instanceMatrix.needsUpdate=true;
+      const sp=st.playing?st.speed:0;fIn.update(dt,lin/LMAX,sp);fEx.update(dt,lex/LMAX,sp);
+      let col,op=.42,emi=.12,name;
+      if(a<180){col=COL.fresh.clone();name='Aspirazione';op=.32+.1*a/180;}
+      else if(a<350){col=COL.fresh.clone().lerp(COL.comp,(a-180)/170);name=a>=336?'Accensione':'Compressione';op=.42+.22*(a-180)/170;}
+      else if(a<385){col=COL.flash.clone().lerp(COL.burn,(a-350)/35);emi=1.7;op=.82;name='Scoppio';}
+      else if(a<540){col=COL.burn.clone().lerp(COL.burnt,(a-385)/155);emi=.8-.6*(a-385)/155;op=.62;name='Espansione';}
+      else{col=COL.exh.clone();name='Scarico';op=.42;}
+      if(lin>.02&&lex>.02)name+=' · incrocio valvole';
+      const res={col,op,emi,name,sub:'Giro '+(a<360?'1':'2')+' di 2 · camme a metà velocità',ign:a>=336&&a<350,phaseCol:'#'+col.getHexString()};
+      if(f>0&&!isD)res.warn='Flottazione valvole: oltre ~13.000 giri la molla non riesce più a far seguire alla valvola il profilo della camma (rischio di contatto con il pistone).';
+      if(isD&&st.rpm>FLOAT_RPM)res.ok='Nessuna flottazione: è la camma di chiusura a riportare su la valvola.';
+      return res;
+    };
+  }
+
+  m.update=(st,dt)=>{
+    const th=st.theta,a=mod(th,720),a2=mod(th,360),tr=th*DEG;
+    crank.rotation.z=-tr;
+    const sx=R*Math.sin(tr),sy=R*Math.cos(tr),py=sy+Math.sqrt(L*L-sx*sx);
+    rod.position.set(sx,sy,0);rod.rotation.z=Math.atan2(sx,py-sy);
+    piston.position.y=py;const top=py+PT;
+    const r=is2?upd2(st,dt,a2,top):upd4(st,dt,a,top);
+    gas.position.y=(top+HEAD_Y)/2;gas.scale.y=Math.max(.01,HEAD_Y-top);gasCap.scale.y=1/gas.scale.y;
+    gasMat.color.copy(r.col);gasMat.emissive.copy(r.col).multiplyScalar(r.emi);gasMat.opacity=r.op;
+    spark.visible=r.ign&&st.explode<.08;
+    m.phaseInfo={name:r.name,col:r.phaseCol,sub:r.cs||r.sub,ang:is2?a2:a,span:is2?360:720,warn:r.warn,ok:r.ok};
+    m.stepIdx=is2?(a2<EXO?0:a2<TRO?1:a2<TRC?2:3):Math.floor(a/180);
+  };
+  return m;
+}
+
+/* ================= trasmissione ================= */
+const RAT=[2.6,1.94,1.55,1.3,1.13,1.0], PRIM=28/15, FINAL=42/15, WHEEL=1.95;
+const SEQ=[1,0,2,3,4,5,6];
+function buildTrans(){
+  const m=new Model('trans');m.clipNormal=V3(-1,0,0);
+  m.cam={target:[0,.8,0],r:46,th:1.0,ph:1.18};m.ez=.35;m.ey=0;
+  const YI=3,YO=-2,D=5,ZG=[-9,-6,-3.5,-.5,2,5],ZS=[-7.5,-2,3.5];
+  const gEng=m.eg([0,7,0]),gClu=m.eg([0,0,9]),gIn=m.eg([0,3.5,0]),gOut=m.eg([0,-2.5,0]),gSel=m.eg([0,-6.5,0]);
+  const caseM=m.part(m.root,new THREE.BoxGeometry(8.8,18.6,23.8),HM(0x8a95a0),{pos:[0,1.0,.75],info:'tScat',kind:'scatola'});m.hideOnExplode.push(caseM);
+  const steel=()=>M(0x9aa4ae,{metalness:.75,roughness:.28}), dark=()=>M(0x56606b,{metalness:.7,roughness:.35});
+  const T=[];// percorso coppia fisso
+  // albero motore
+  const crank=new THREE.Group();crank.position.set(0,7.6,0);gEng.add(crank);
+  T.push(m.part(crank,cylZ(.55,8),dark(),{pos:[0,0,5.4],info:'tAlbero',kind:'albero',label:'Albero motore',loff:[0,1.2,-3]}));
+  T.push(m.part(crank,webGeo(2.1,1.4,.75,.45),dark(),{pos:[0,0,3.6],info:'tAlbero',kind:'albero'}));
+  T.push(m.part(crank,webGeo(2.1,1.4,.75,.45),dark(),{pos:[0,0,2.4],info:'tAlbero',kind:'albero'}));
+  T.push(m.part(crank,cylZ(.4,1.3),dark(),{pos:[0,1.4,3],info:'tAlbero',kind:'albero'}));
+  T.push(m.part(crank,gearGeo(1.6,15,.8,.5),steel(),{pos:[0,0,7.4],info:'tPrim',kind:'primaria',label:'Primaria',loff:[0,2.2,0]}));
+  // frizione
+  const bask=new THREE.Group();bask.position.set(0,YI,0);gClu.add(bask);
+  const hub=new THREE.Group();hub.position.set(0,YI,0);gClu.add(hub);
+  T.push(m.part(bask,gearGeo(3.0,28,.8,.5),steel(),{pos:[0,0,7.4],info:'tPrim',kind:'primaria'}));
+  T.push(m.part(bask,ringGeo(2.65,.5,.25),HM(0x6e7a86),{pos:[0,0,7.9],info:'tCamp',kind:'campana'}));
+  T.push(m.part(bask,new THREE.CylinderGeometry(2.65,2.65,2.8,48,1,true).rotateX(Math.PI/2),HM(0x7c8792),{pos:[0,0,9.2],info:'tCamp',kind:'campana',label:'Campana frizione',loff:[0,3.3,-1.2]}));
+  const plates=[];
+  for(let k=0;k<8;k++){
+    const fr=k%2===0;const z=8.15+k*.33;
+    const ms=fr?m.part(bask,ringGeo(2.3,1.5,.16,8,.28),M(0x8a5a35,{metalness:.1,roughness:.85}),{pos:[0,0,z],info:'tAttr',kind:'dischi-attrito',label:k===0?'Dischi d\'attrito':null,loff:[0,-3.2,0],small:true})
+               :m.part(hub,ringGeo(2.2,.95,.16),M(0xb8c0c8,{metalness:.85,roughness:.22}),{pos:[0,0,z],info:'tAcc',kind:'dischi-acciaio',label:k===1?'Dischi in acciaio':null,loff:[0,-2.4,1.6],small:true});
+    ms.userData.z0=z;ms.userData.k=k;plates.push(ms);T.push(ms);
+  }
+  T.push(m.part(hub,cylZ(.95,2.7,24),dark(),{pos:[0,0,9.3],info:'tMozzo',kind:'mozzo'}));
+  const pp=new THREE.Group();hub.add(pp);
+  T.push(m.part(pp,ringGeo(2.35,.42,.28),M(0xc7ced5,{metalness:.8}),{pos:[0,0,10.85],info:'tSping',kind:'spingidisco',label:'Spingidisco e molle',loff:[0,-2.8,1]}));
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+.4;m.part(pp,new THREE.TubeGeometry(new Helix(.24,5),60,.05,5,false).rotateX(Math.PI/2),M(0x44b86a),{pos:[1.3*Math.cos(a),1.3*Math.sin(a),11.0],info:'tSping',kind:'spingidisco'});}
+  // primario
+  const inS=new THREE.Group();inS.position.set(0,YI,0);gIn.add(inS);
+  T.push(m.part(inS,cylZ(.38,21.5,20),steel(),{pos:[0,0,.25],info:'tPrimario',kind:'primario',label:'Albero primario',loff:[0,.9,-11.8]}));
+  const inG=[],outG=[],ri=RAT.map(r=>D/(1+r)),ro=ri.map(r=>D-r);
+  RAT.forEach((r,i)=>{inG.push(m.part(inS,gearGeo(ri[i],Math.max(9,Math.round(ri[i]*8)),1.1,.38),steel(),{pos:[0,0,ZG[i]],info:'tIngP',kind:'ingr-primario'}));});
+  // secondario
+  const outS=new THREE.Group();outS.position.set(0,YO,0);gOut.add(outS);
+  const outShaft=m.part(outS,cylZ(.42,19,20),steel(),{pos:[0,0,-2.5],info:'tSecondario',kind:'secondario',label:'Albero secondario',loff:[0,-1.0,-8.5]});
+  const spro=m.part(outS,gearGeo(1.5,15,.5,.42),M(0x2f353c,{metalness:.8}),{pos:[0,0,-11.6],info:'tPign',kind:'pignone',label:'Pignone',loff:[0,-2.0,0]});
+  const outGG=[];
+  RAT.forEach((r,i)=>{const g=new THREE.Group();g.position.set(0,YO,ZG[i]);gOut.add(g);outGG.push(g);
+    const ms=m.part(g,gearGeo(ro[i],Math.round(ro[i]*8),1.1,.45),M(0x8d97a2,{metalness:.75,roughness:.3}),{info:'tIngS',kind:'ingr-secondario',label:(i+1)+'ª',loff:[0,-ro[i]-.5,0],small:true});outG.push(ms);
+    const side=(i%2===0)?1:-1;for(let j=0;j<6;j++){const a=j*Math.PI/3;m.part(g,new THREE.BoxGeometry(.3,.3,.25),dark(),{pos:[.75*Math.cos(a),.75*Math.sin(a),side*.65],info:'tIngS',kind:'ingr-secondario',pick:false});}
+    g.rotation.z=Math.PI/Math.round(ro[i]*8);
+  });
+  const sleeves=ZS.map((z,s)=>{const g=new THREE.Group();g.position.z=z;outS.add(g);
+    const ms=m.part(g,cylZ(1.0,.8,28),M(0xa98bf0,{metalness:.55,roughness:.35}),{info:'tInn',kind:'innesto',label:'Innesto '+(s*2+1)+'-'+(s*2+2),loff:[0,1.6,0],small:true});
+    for(let j=0;j<6;j++){const a=j*Math.PI/3+Math.PI/6;[-1,1].forEach(sd=>m.part(g,new THREE.BoxGeometry(.28,.28,.25),M(0xa98bf0),{pos:[.75*Math.cos(a),.75*Math.sin(a),sd*.5],info:'tInn',kind:'innesto',pick:false}));}
+    g.userData.ms=ms;return g;});
+  // selettore
+  const drum=new THREE.Group();drum.position.set(0,-6.5,0);gSel.add(drum);
+  m.part(drum,cylZ(1.0,16,32),M(0x7d8792,{metalness:.6}),{pos:[0,0,-1.6],info:'tTamb',kind:'tamburo',label:'Tamburo selettore',loff:[0,-1.6,-6]});
+  ZS.forEach((z,s)=>{const pts=[];for(let i=0;i<24;i++){const a=i/24*Math.PI*2;pts.push([Math.cos(a)*1.02,Math.sin(a)*1.02,z+.38*Math.sin(2*a+s*1.3)]);}m.part(drum,tube(pts,.09,true),M(0x2a3038),{info:'tTamb',kind:'tamburo',pick:false});});
+  const forks=ZS.map((z,s)=>{const g=new THREE.Group();g.position.set(0,0,z);gSel.add(g);
+    m.part(g,new THREE.BoxGeometry(.3,2.45,.3),M(0x6fa8dc,{metalness:.5}),{pos:[0,-4.3,0],info:'tForc',kind:'forcella',label:s===1?'Forcella':null,loff:[.4,0,0],small:true});
+    const t=new THREE.TorusGeometry(1.12,.12,8,24,Math.PI);t.rotateZ(Math.PI);m.part(g,t,M(0x6fa8dc,{metalness:.5}),{pos:[0,YO,0],info:'tForc',kind:'forcella'});
+    m.part(g,new THREE.CylinderGeometry(.14,.14,.5,10),M(0x6fa8dc),{pos:[0,-5.6,0],info:'tForc',kind:'forcella'});return g;});
+  // stato
+  let pe=0,pb=0,pin=0,pout=0,drumA=0;const pg=RAT.map(()=>0);const sz=ZS.slice();
+  m.eng=1;
+  m.update=(st,dt)=>{
+    const d=st.dth*DEG;
+    m.eng+=((1-st.clutch)-m.eng)*Math.min(1,dt*7);const e=clamp(m.eng,0,1),lever=st.clutch;
+    pe+=d;pb+=d/PRIM;const din=d/PRIM*e;pin+=din;
+    crank.rotation.z=-pe;bask.rotation.z=pb;hub.rotation.z=pin;inS.rotation.z=pin;
+    const g=st.gear;const sel=g>0?Math.floor((g-1)/2):-1;
+    ZS.forEach((z,s)=>{const tgt=s===sel?z+((g-1)%2===0?-.42:.42):z;sz[s]+=(tgt-sz[s])*Math.min(1,dt*8);sleeves[s].position.z=sz[s];forks[s].position.z=sz[s];});
+    const arrived=g>0&&Math.abs(sz[sel]-(ZS[sel]+((g-1)%2===0?-.42:.42)))<.08;
+    RAT.forEach((r,i)=>{pg[i]-=din*ri[i]/ro[i];outGG[i].rotation.z=pg[i]+Math.PI/Math.round(ro[i]*8);});
+    const dout=arrived?-din*ri[g-1]/ro[g-1]:0;pout+=dout;outS.rotation.z=pout;
+    const di=SEQ.indexOf(g);drumA+=(-di*.9-drumA)*Math.min(1,dt*6);drum.rotation.z=drumA;
+    plates.forEach(p=>{p.position.z=p.userData.z0+p.userData.k*.1*lever;});pp.position.z=.95*lever;
+    // percorso coppia
+    const on=st.torque;const tset=new Set();
+    if(on){T.forEach(x=>{if(x.userData.kind==='primaria'||x.userData.kind==='albero'||x.userData.kind==='campana'||x.userData.kind==='dischi-attrito')tset.add(x);else if(e>.15)tset.add(x);});
+      if(e>.15&&arrived){tset.add(inG[g-1]);tset.add(outG[g-1]);tset.add(sleeves[sel].userData.ms);tset.add(outShaft);tset.add(spro);}}
+    m.torqueSet=tset;m.torqueK=on?1:0;
+    const rpmIn=st.rpm/PRIM*e,rpmOut=arrived?rpmIn/RAT[g-1]:0;
+    m.read={rpmIn,rpmOut,arrived,e,kmh:rpmOut/FINAL*WHEEL*60/1000};
+    m.phaseInfo={name:g===0?'Folle (N)':g+'ª marcia'+(arrived?'':' · innesto in corso'),col:g===0?'#8b97a4':'#ffb020',sub:lever>.6?'Frizione disinnestata: il motore gira, il cambio no':lever>.15?'Frizione che slitta':'Frizione innestata',trans:true,
+      warn:(g>0&&!arrived&&lever<.2)?null:null};
+    m.stepIdx=lever>.15?1:(g>0&&!arrived)?3:-1;
+  };
+  return m;
+}
+
+const BUILD={'2t':()=>buildEngine('2t'),'4t':()=>buildEngine('4t'),'desmo':()=>buildEngine('desmo'),'trans':buildTrans};
+
+/* ================= stato ================= */
+const S={tab:'4t',theta:0,dth:0,playing:true,speed:.35,rpm:6000,explode:0,explodeT:0,section:true,cut:0,xray:false,labels:true,diff:false,sync:true,cmpA:'2t',cmpB:'4t',clutch:0,gear:1,torque:true,sel:null};
+
+/* ================= orbit + view ================= */
+class Orbit{
+  constructor(v){this.v=v;this.target=V3(0,10,0);this.th=.6;this.ph=1.2;this.r=36;this.ptrs=new Map();this.down=null;this.pd=null;this.onChange=null;
+    const el=v.canvas;
+    el.addEventListener('contextmenu',e=>e.preventDefault());
+    el.addEventListener('pointerdown',e=>{try{el.setPointerCapture(e.pointerId);}catch(_){}this.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(this.ptrs.size===1)this.down={x:e.clientX,y:e.clientY,t:performance.now(),moved:0,pan:e.button===2||e.shiftKey};else if(this.down)this.down.moved=99;});
+    el.addEventListener('pointermove',e=>{const p=this.ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;if(this.down)this.down.moved+=Math.abs(dx)+Math.abs(dy);
+      if(this.ptrs.size>=2){const [a,b]=[...this.ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(this.pd)this.r=clamp(this.r*this.pd/d,10,95);this.pd=d;}
+      else if(this.down&&this.down.pan)this.pan(dx,dy);
+      else{this.th-=dx*.008;this.ph=clamp(this.ph-dy*.008,.12,Math.PI-.12);}
+      this.changed();});
+    const up=e=>{if(!this.ptrs.has(e.pointerId))return;this.ptrs.delete(e.pointerId);if(this.ptrs.size<2)this.pd=null;if(this.ptrs.size===0){if(this.down&&this.down.moved<6&&performance.now()-this.down.t<500&&e.type==='pointerup')this.v.pick(e);this.down=null;}};
+    el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+    el.addEventListener('wheel',e=>{e.preventDefault();this.r=clamp(this.r*(1+e.deltaY*.0012),10,95);this.changed();},{passive:false});
+  }
+  pan(dx,dy){const c=this.v.camera;const k=this.r*.0017;const rt=V3(0,0,0).setFromMatrixColumn(c.matrix,0),up=V3(0,0,0).setFromMatrixColumn(c.matrix,1);this.target.addScaledVector(rt,-dx*k).addScaledVector(up,dy*k);}
+  changed(){if(this.onChange)this.onChange(this);}
+  set(c){this.target.set(c.target[0],c.target[1],c.target[2]);this.r=c.r;this.th=c.th;this.ph=c.ph;}
+  copyFrom(o){this.th=o.th;this.ph=o.ph;this.r=o.r;this.target.copy(o.target);}
+  apply(){const c=this.v.camera,m=this.v.model,e=S.explode;const t=this.target.clone();t.y+=(m&&m.ey||0)*e;const r=this.r*(1+(m&&m.ez||0)*e);c.position.set(t.x+r*Math.sin(this.ph)*Math.sin(this.th),t.y+r*Math.cos(this.ph),t.z+r*Math.sin(this.ph)*Math.cos(this.th));c.lookAt(t);}
+}
+class View{
+  constructor(el){this.el=el;this.canvas=el.querySelector('canvas');this.lblEl=el.querySelector('.labels');this.badge=el.querySelector('.badge');
+    const r=this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,alpha:true});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.localClippingEnabled=true;r.outputEncoding=THREE.sRGBEncoding;
+    this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(36,1,.1,500);
+    this.scene.add(new THREE.HemisphereLight(0xdfe8ff,0x1a1f26,.85));
+    const d1=new THREE.DirectionalLight(0xffffff,1.05);d1.position.set(14,26,20);this.scene.add(d1);
+    const d2=new THREE.DirectionalLight(0x9db8ff,.45);d2.position.set(-18,8,-12);this.scene.add(d2);
+    this.scene.add(new THREE.AmbientLight(0xffffff,.12));
+    this.grid=new THREE.GridHelper(70,35,0x2a3441,0x1a2129);this.scene.add(this.grid);
+    this.orbit=new Orbit(this);this.plane=new THREE.Plane(V3(0,0,-1),0);this.ray=new THREE.Raycaster();
+    this.model=null;this.key=null;this.lbls=[];this.diffSet=null;this.lastBadge='';
+    if(window.ResizeObserver)new ResizeObserver(()=>this.resize()).observe(el);window.addEventListener('resize',()=>this.resize());this.resize();}
+  resize(){const w=this.el.clientWidth,h=this.el.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;const asp=w/h;this.camera.fov=asp<1.3?Math.min(64,2*Math.atan(Math.tan(18*DEG)*1.3/asp)/DEG):36;this.camera.updateProjectionMatrix();}
+  setModel(key,resetCam){if(this.key===key&&!resetCam)return;
+    if(this.model){this.scene.remove(this.model.root);this.model.root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
+    this.model=BUILD[key]();this.key=key;this.scene.add(this.model.root);
+    this.plane.normal.copy(this.model.clipNormal);this.grid.position.y=key==='trans'?-9:-5.2;
+    this.orbit.set(this.model.cam);
+    this.lblEl.innerHTML='';this.lbls=this.model.labels.map(l=>{const d=document.createElement('div');d.className='lbl'+(l.small?' small':'');d.textContent=l.text;this.lblEl.appendChild(d);return {l,d};});
+    this.model._sec=null;if(S.sel&&S.sel.view===this)S.sel=null;
+    this.resize();}
+  pick(e){const m=this.model;if(!m)return;const rc=this.canvas.getBoundingClientRect();const p=new THREE.Vector2((e.clientX-rc.left)/rc.width*2-1,-(e.clientY-rc.top)/rc.height*2+1);
+    this.ray.setFromCamera(p,this.camera);const hits=this.ray.intersectObjects(m.pickables,false);
+    for(const h of hits){const o=h.object;if(!visible(o))continue;if(o.userData.housing){if(S.section&&this.plane.distanceToPoint(h.point)<0)continue;if(S.xray)continue;}
+      S.sel={view:this,obj:o};const inf=INFO[o.userData.info];if(inf){$('#infoT').textContent=inf[0];$('#infoD').textContent=inf[1];}return;}
+    S.sel=null;}
+  tick(dt,t){const m=this.model;if(!m)return;
+    m.update(S,dt);m.applyExplode(S.explode);
+    const key=S.section+'|'+S.xray;
+    if(m._sec!==key){m.housingMats.forEach(mt=>{mt.clippingPlanes=S.section?[this.plane]:[];const op=S.xray?Math.min(mt.userData.baseOpacity,.14):mt.userData.baseOpacity;mt.transparent=op<1;mt.opacity=op;mt.depthWrite=op>=1;mt.needsUpdate=true;});m._sec=key;}
+    this.plane.constant=S.cut;
+    const pulse=.55+.45*Math.sin(t*4.2),tp=.5+.5*Math.sin(t*6);
+    for(const ms of m.pickables){let r=0,g=0,b=0;const u=ms.userData;
+      if(this.diffSet&&this.diffSet.has(u.kind)){r+=.95*pulse;g+=.45*pulse;b+=.02;}
+      if(m.torqueSet&&m.torqueSet.has(ms)){const k=.35+.3*tp;r+=1*k;g+=.72*k;b+=.1*k;}
+      if(u.floatRed){r+=.9;g+=.05;b+=.05;}
+      if(S.sel&&S.sel.obj===ms){r+=.2;g+=.55;b+=.8;}
+      ms.material.emissive.setRGB(r,g,b);}
+    this.orbit.apply();this.renderer.render(this.scene,this.camera);
+    // etichette
+    const w=this.el.clientWidth,h=this.el.clientHeight,v=V3(0,0,0);
+    for(const {l,d} of this.lbls){if(!S.labels||!visible(l.obj)){d.style.display='none';continue;}
+      l.obj.getWorldPosition(v);v.add(l.off);v.project(this.camera);
+      if(v.z>1||v.x<-1.1||v.x>1.1||v.y<-1.1||v.y>1.1){d.style.display='none';continue;}
+      d.style.display='block';d.style.transform=`translate(${((v.x+1)/2*w+6).toFixed(1)}px,${((1-v.y)/2*h-9).toFixed(1)}px)`;}
+    // badge
+    const pi=m.phaseInfo;let html=`<div class="bname">${NAMES[this.key]}</div><div class="bphase"><i style="background:${pi.col}"></i>${pi.name}</div><div class="bsub">${pi.sub||''}</div>`;
+    if(!pi.trans)html+=`<div class="bang">θ ${Math.round(pi.ang).toString().padStart(3,' ')}° / ${pi.span}° · ${Math.round(S.rpm).toLocaleString('it-IT')} giri/min</div>`;
+    if(pi.warn)html+=`<div class="bwarn">⚠ ${pi.warn}</div>`;if(pi.ok)html+=`<div class="bok">✓ ${pi.ok}</div>`;
+    if(this.diffSet&&this.diffSet.size&&this.diffNames)html+=`<div class="bdiff">● ${this.diffLabel}: ${this.diffNames}</div>`;
+    if(html!==this.lastBadge){this.badge.innerHTML=html;this.lastBadge=html;}
+  }
+}
+function visible(o){while(o){if(!o.visible)return false;o=o.parent;}return true;}
+
+/* ================= UI ================= */
+const vA=new View($('#viewA')),vB=new View($('#viewB'));
+vA.orbit.onChange=o=>{if(S.tab==='cmp'&&S.sync)vB.orbit.copyFrom(o);};
+vB.orbit.onChange=o=>{if(S.tab==='cmp'&&S.sync)vA.orbit.copyFrom(o);};
+
+const STEPS={
+ '2t':['<b>Scoppio ed espansione.</b> Vicino al PMS la candela accende la miscela: i gas spingono giù il pistone. Sotto, il pistone che scende comprime la miscela nel carter.','<b>Scarico.</b> Il pistone scopre la luce di scarico e i gas combusti escono verso la camera d\'espansione.','<b>Travaso e lavaggio.</b> Si scoprono i travasi: la miscela precompressa sale dal carter e spinge fuori i gas combusti.','<b>Compressione e aspirazione.</b> Il pistone risale, chiude le luci e comprime. Nel carter si crea depressione: le lamelle si aprono ed entra miscela fresca.'],
+ '4t':['<b>Aspirazione (0–180°).</b> Il pistone scende con la valvola di aspirazione aperta: entrano aria e benzina.','<b>Compressione (180–360°).</b> Valvole chiuse, il pistone risale e comprime. Poco prima del PMS scocca la scintilla.','<b>Scoppio ed espansione (360–540°).</b> La combustione spinge il pistone: è l\'unica fase che produce lavoro.','<b>Scarico (540–720°).</b> Si apre la valvola di scarico e il pistone, risalendo, espelle i gas. Poi si ricomincia: 2 giri per ciclo.'],
+ 'trans':['<b>Primaria.</b> L\'ingranaggio sull\'albero motore fa girare la campana della frizione, con una riduzione fissa.','<b>Frizione.</b> I dischi d\'attrito girano con la campana, quelli in acciaio con il primario. Le molle li pressano: tirando la leva si separano e il motore si "stacca" dal cambio.','<b>Coppie sempre in presa.</b> Ogni ingranaggio del primario ingrana con il suo gemello sul secondario, che però gira folle.','<b>Selezione.</b> La leva fa ruotare il tamburo selettore; le scanalature spostano una forcella che fa scorrere l\'innesto a denti e blocca l\'ingranaggio scelto.','<b>Uscita.</b> Il secondario porta il pignone, che con la catena muove la ruota.']
+};
+STEPS.desmo=STEPS['4t'];
+const NOTES={
+ '2t':'Un ciclo completo in un solo giro: uno scoppio a ogni giro. Il pistone fa anche da valvola.',
+ '4t':'Le valvole sono aperte dalle camme e richiuse dalle <b>molle</b>. Alza il regime sopra i 13.000 giri per vedere la flottazione.',
+ 'desmo':'<b>La differenza Desmo:</b> la camma di apertura spinge il bilanciere che apre la valvola; la <b>camma di chiusura</b>, sullo stesso albero, aziona un bilanciere a forcella che la riporta su. Nessuna molla di richiamo.',
+ 'trans':'Prova: metti in folle con la frizione innestata (il secondario resta fermo), poi tira la leva (il primario si ferma).'
+};
+function renderSteps(){const k=S.tab==='cmp'?S.cmpA:S.tab;$('#steps').innerHTML=STEPS[k].map(s=>`<li>${s}</li>`).join('');$('#howNote').innerHTML=`<div class="note">${NOTES[k]}</div>`;$('#howT').textContent='Come funziona · '+(S.tab==='cmp'?SHORT[k]:NAMES[k]);}
+let lastStep=-2;function updSteps(){const m=vA.model;if(!m)return;const i=m.stepIdx;if(i===lastStep)return;lastStep=i;[...$('#steps').children].forEach((li,j)=>li.classList.toggle('on',j===i));}
+
+function setTab(t,fromHash){
+  S.tab=t;document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  const cmp=t==='cmp',tr=t==='trans';
+  $('#stage').classList.toggle('cmp',cmp);$('#viewB').hidden=!cmp;$('#cmpWrap').hidden=!cmp;$('#cardCmp').hidden=!cmp;$('#tSync').hidden=!cmp;
+  $('#cardTrans').hidden=!tr;$('#tlWrap').hidden=tr;$('#rpmNote').hidden=tr;
+  $('#tDiff').textContent=cmp?'Evidenzia differenze':'Cosa lo distingue';
+  $('#cut').min=-3.5;$('#cut').max=3.5;
+  if(cmp){vA.setModel(S.cmpA);vB.setModel(S.cmpB);if(S.sync)vB.orbit.copyFrom(vA.orbit);renderCmp();}
+  else vA.setModel(t);
+  updDiff();renderSteps();lastStep=-2;
+  if(!fromHash){try{history.replaceState(null,'','#'+HASH[t]);}catch(_){try{location.hash=HASH[t];}catch(__){}}}
+  setTimeout(()=>{vA.resize();vB.resize();},0);
+}
+const HASH={'2t':'due-tempi','4t':'quattro-tempi','desmo':'desmo','trans':'trasmissione','cmp':'confronto'};
+function fromHash(){const h=(location.hash||'').slice(1);const k=Object.keys(HASH).find(k=>HASH[k]===h);return k;}
+
+function updDiff(){
+  [vA,vB].forEach(v=>{v.diffSet=null;v.diffNames='';});
+  if(!S.diff)return;
+  const mk=(key,others,label,v)=>{const o=new Set();others.forEach(k=>KINDS[k].forEach(x=>o.add(x)));const s=new Set(KINDS[key].filter(x=>!o.has(x)));v.diffSet=s;v.diffLabel=label;v.diffNames=[...s].map(x=>KIND_NAME[x]).filter(Boolean).join(', ');};
+  if(S.tab==='cmp'){if(S.cmpA!==S.cmpB){mk(S.cmpA,[S.cmpB],'Solo qui',vA);mk(S.cmpB,[S.cmpA],'Solo qui',vB);}}
+  else if(S.tab!=='trans')mk(S.tab,['2t','4t','desmo'].filter(k=>k!==S.tab),'Distintivo',vA);
+}
+
+// controlli
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+const play=()=>{$('#btnPlay').innerHTML=S.playing?'❚❚ Pausa':'▶ Avvia';};
+$('#btnPlay').onclick=()=>{S.playing=!S.playing;play();};
+$('#btnStep').onclick=()=>{S.pendStep=(S.pendStep||0)+10;};
+$('#btnReset').onclick=()=>{vA.orbit.set(vA.model.cam);if(S.tab==='cmp')vB.orbit.set(vB.model.cam);};
+function bindRange(id,key,fmt,cb){const el=$('#'+id),out=$('#v'+id.charAt(0).toUpperCase()+id.slice(1));const f=()=>{S[key]=parseFloat(el.value);if(out)out.textContent=fmt(S[key]);if(cb)cb();};el.addEventListener('input',f);f();}
+bindRange('speed','speed',v=>v.toFixed(2)+' giri/s');
+bindRange('rpm','rpm',v=>Math.round(v).toLocaleString('it-IT'));
+bindRange('explode','explodeT',v=>Math.round(v*100)+'%');
+bindRange('cut','cut',v=>v.toFixed(1));
+bindRange('clutch','clutch',v=>v<.05?'innestata':v>.6?'tirata':'a metà');
+function bindToggle(id,key,cb){const el=$('#'+id);el.onclick=()=>{S[key]=!S[key];el.setAttribute('aria-pressed',S[key]);if(cb)cb();};el.setAttribute('aria-pressed',S[key]);}
+bindToggle('tSection','section',()=>{$('#cut').disabled=!S.section;});
+bindToggle('tXray','xray');bindToggle('tLabels','labels');bindToggle('tDiff','diff',updDiff);bindToggle('tSync','sync',()=>{if(S.sync)vB.orbit.copyFrom(vA.orbit);});bindToggle('tTorque','torque');
+// marce
+$('#gears').innerHTML=SEQ.map(g=>`<button data-g="${g}">${g===0?'N':g}</button>`).join('');
+function updGears(){document.querySelectorAll('#gears button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.g===S.gear));}
+document.querySelectorAll('#gears button').forEach(b=>b.onclick=()=>{S.gear=+b.dataset.g;updGears();});updGears();
+window.addEventListener('keydown',e=>{if(S.tab!=='trans'||e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;const i=SEQ.indexOf(S.gear);if(e.key==='ArrowUp'&&i<6){S.gear=SEQ[i+1];updGears();}if(e.key==='ArrowDown'&&i>0){S.gear=SEQ[i-1];updGears();}});
+// confronto
+const OPTS=[['2t','2 tempi'],['4t','4 tempi (molle)'],['desmo','4 tempi Desmo']];
+['selA','selB'].forEach(id=>{$('#'+id).innerHTML=OPTS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');});
+$('#selA').value=S.cmpA;$('#selB').value=S.cmpB;
+$('#selA').onchange=e=>{S.cmpA=e.target.value;vA.setModel(S.cmpA);if(S.sync)vA.orbit.copyFrom(vB.orbit);updDiff();renderCmp();renderSteps();};
+$('#selB').onchange=e=>{S.cmpB=e.target.value;vB.setModel(S.cmpB);if(S.sync)vB.orbit.copyFrom(vA.orbit);updDiff();renderCmp();};
+
+const ROWS=[
+ ['Corse per ciclo',{'2t':'2','4t':'4','desmo':'4'}],
+ ['Giri d\'albero per ciclo',{'2t':'1','4t':'2','desmo':'2'}],
+ ['Scoppi per giro',{'2t':'1','4t':'½','desmo':'½'}],
+ ['Chi apre e chiude il passaggio dei gas',{'2t':'Il pistone, scoprendo le luci nel cilindro, più le lamelle','4t':'Valvole in testa aperte dalle camme','desmo':'Valvole in testa aperte dalle camme'}],
+ ['Chiusura delle valvole',{'2t':'— (nessuna valvola)','4t':'Molle di richiamo','desmo':'Bilanciere di chiusura comandato da una camma'}],
+ ['Parti della distribuzione',{'2t':'Nessuna','4t':'Alberi a camme, punterie, valvole, molle, catena','desmo':'Alberi con doppio lobo, bilancieri di apertura e chiusura, valvole, catena o cinghia'}],
+ ['Lubrificazione',{'2t':'Olio miscelato alla benzina, che poi brucia','4t':'Circuito in pressione con olio nel carter','desmo':'Circuito in pressione con olio nel carter'}],
+ ['Ruolo del carter',{'2t':'Pompa di precompressione della miscela','4t':'Coppa dell\'olio','desmo':'Coppa dell\'olio'}],
+ ['Potenza a parità di cilindrata',{'2t':'Molto alta','4t':'Media','desmo':'Alta, grazie ai regimi elevati'}],
+ ['Consumi ed emissioni',{'2t':'Alti: parte della miscela fresca esce allo scarico e l\'olio brucia','4t':'Contenuti','desmo':'Contenuti'}],
+ ['Cosa limita gli alti regimi',{'2t':'Fasatura fissa delle luci e accordatura dello scarico','4t':'Flottazione delle valvole (molle)','desmo':'Inerzie e resistenza dei componenti: niente flottazione'}],
+ ['Manutenzione tipica',{'2t':'Pistone e fasce più frequenti','4t':'Controllo periodico del gioco valvole','desmo':'Registrazione di apertura e chiusura, più laboriosa'}],
+ ['Dove si trova',{'2t':'Cross ed enduro 2T, scooter d\'epoca, motoseghe, fuoribordo','4t':'Quasi tutte le auto e le moto','desmo':'Gran parte della gamma Ducati (sistema usato dal 1956)'}]
+];
+const KEYDIFF={
+ '2t|4t':['<b>Ritmo.</b> Il 2 tempi fa uno scoppio a ogni giro, il 4 tempi uno ogni due: guarda la timeline, a sinistra ci sono due "fiammate" arancioni contro una.','<b>Niente valvole.</b> Nel 2T è il pistone ad aprire e chiudere le luci nel cilindro, e il carter lavora come pompa. Nel 4T ci sono valvole, camme e catena.','<b>Il prezzo.</b> Il 2T è più leggero e potente a parità di cilindrata, ma consuma ed emette di più: durante il lavaggio un po\' di miscela fresca esce allo scarico, e l\'olio brucia.'],
+ '2t|desmo':['<b>Ritmo.</b> Uno scoppio a ogni giro (2T) contro uno ogni due giri (Desmo).','<b>Agli antipodi.</b> Il 2T non ha distribuzione: il pistone fa da valvola. Il Desmo ha la distribuzione più elaborata: due lobi e due bilancieri per ogni valvola.','<b>Potenza.</b> Entrambi puntano a molta potenza: il 2T con uno scoppio a ogni giro, il Desmo potendo girare forte senza flottazione delle valvole.'],
+ '4t|desmo':['<b>Stesso ciclo, stessa fasatura.</b> Aspirazione, compressione, scoppio e scarico avvengono negli stessi angoli: le timeline sono identiche.','<b>Cambia solo la chiusura.</b> Nel 4T classico la valvola è richiamata da una molla; nel Desmo da un bilanciere a forcella comandato dalla camma di chiusura.','<b>Agli alti regimi.</b> Porta il regime oltre 13.000 giri: la valvola a molla flotta (diventa rossa, il grafico si deforma), quella desmodromica segue sempre la camma. Il Desmo consente anche profili più "pieni" (curva più larga nel grafico).']
+};
+function renderCmp(){
+  const a=S.cmpA,b=S.cmpB;
+  let h=`<tr><th></th><th>A · ${SHORT[a]}</th><th>B · ${SHORT[b]}</th></tr>`;
+  ROWS.forEach(([lab,v])=>{const d=v[a]!==v[b];h+=`<tr class="${d?'dif':''}"><td>${lab}</td><td>${v[a]}</td><td>${v[b]}</td></tr>`;});
+  $('#cmpTable').innerHTML=h;
+  const key=[a,b].sort((x,y)=>['2t','4t','desmo'].indexOf(x)-['2t','4t','desmo'].indexOf(y)).join('|');
+  $('#keydiff').innerHTML=a===b?'<p>Hai scelto lo stesso motore nelle due viste: seleziona due modelli diversi per vedere le differenze.</p>':KEYDIFF[key].map(p=>`<p>${p}</p>`).join('');
+  const lg=[];[[a,'A',''],[b,'B','d']].forEach(([k,n,cl])=>{curvesFor(k).forEach(c=>lg.push(`<span><i class="${cl}" style="border-color:${c.c}"></i>${n} · ${SHORT[k]}: ${c.n}</span>`));});
+  $('#legend').innerHTML=lg.join('');
+}
+function curvesFor(k){
+  if(k==='2t')return [{n:'luce di scarico',c:'#ff7a3d',f:x=>frac(topY(mod(x,360)),EX_TOP,EX_BOT)},{n:'travasi',c:'#2dd4bf',f:x=>frac(topY(mod(x,360)),TR_TOP,TR_BOT)}];
+  return [{n:'valvola aspirazione',c:'#38bdf8',f:x=>valveLift(k,'in',x,S.rpm)/LMAX},{n:'valvola scarico',c:'#ff7a3d',f:x=>valveLift(k,'ex',x,S.rpm)/LMAX}];
+}
+
+/* ================= timeline e grafico ================= */
+function prepCanvas(cv,h){const dpr=Math.min(2,window.devicePixelRatio||1);const w=cv.clientWidth;if(!w)return null;if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.height=h+'px';}const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);return {c,w};}
+const TL={x0:92,pad:14};
+function drawTimeline(){
+  if(S.tab==='trans')return;const keys=S.tab==='cmp'?[S.cmpA,S.cmpB]:[S.tab];
+  const H=keys.length*36+30;const p=prepCanvas($('#timeline'),H);if(!p)return;const {c,w}=p;
+  const x0=TL.x0,x1=w-TL.pad,X=a=>x0+(x1-x0)*a/720;
+  c.font='600 12px Inter, sans-serif';c.textBaseline='middle';
+  keys.forEach((k,i)=>{const y=6+i*36;
+    c.fillStyle='#8b97a4';c.textAlign='left';c.fillText((S.tab==='cmp'?(i?'B · ':'A · '):'')+SHORT[k],4,y+13);
+    SEGS(k).forEach(([s,e,n,col])=>{c.fillStyle=col;c.globalAlpha=.85;c.fillRect(X(s)+1,y,X(e)-X(s)-2,26);c.globalAlpha=1;
+      const ww=X(e)-X(s);if(ww>58){c.fillStyle=col==='#38bdf8'||col==='#2dd4bf'?'#06202b':'#fff';c.font='600 11px Inter, sans-serif';c.textAlign='center';let t=n;while(c.measureText(t).width>ww-8&&t.length>3)t=t.slice(0,-2)+'…';c.fillText(t,(X(s)+X(e))/2,y+13);}});
+    IGN[k].forEach(a=>{const x=X(a);c.fillStyle='#fff4c2';c.beginPath();c.moveTo(x,y-3);c.lineTo(x+5,y+5);c.lineTo(x-5,y+5);c.closePath();c.fill();});
+  });
+  const yb=6+keys.length*36;c.fillStyle='#6f7b88';c.font='500 10.5px Inter, sans-serif';c.textAlign='center';
+  [0,180,360,540,720].forEach((a,i)=>{const x=X(a);c.fillRect(x-.5,yb-4,1,5);c.fillText((i%2?'PMI ':'PMS ')+a+'°',clamp(x,x0+20,x1-24),yb+8);});
+  c.fillText('1° giro',X(90),yb+20);c.fillText('2° giro',X(450),yb+20);
+  const x=X(mod(S.theta,720));c.fillStyle='#ffb020';c.fillRect(x-1,2,2,yb-4);c.beginPath();c.moveTo(x-5,0);c.lineTo(x+5,0);c.lineTo(x,6);c.closePath();c.fill();
+}
+$('#timeline').addEventListener('pointerdown',e=>{const rc=e.currentTarget.getBoundingClientRect();const a=clamp((e.clientX-rc.left-TL.x0)/(rc.width-TL.x0-TL.pad)*720,0,719.9);const base=Math.floor(S.theta/720)*720;S.theta=base+a;S.playing=false;play();});
+function drawChart(){
+  const p=prepCanvas($('#chart'),230);if(!p)return;const {c,w}=p;const x0=34,x1=w-10,y0=14,y1=200;const X=a=>x0+(x1-x0)*a/720,Y=v=>y1-(y1-y0)*v/1.15;
+  c.strokeStyle='#242c36';c.lineWidth=1;c.fillStyle='#6f7b88';c.font='500 10.5px Inter, sans-serif';c.textAlign='center';
+  [0,180,360,540,720].forEach(a=>{c.beginPath();c.moveTo(X(a),y0);c.lineTo(X(a),y1);c.stroke();c.fillText(a+'°',X(a),y1+14);});
+  c.textAlign='right';[0,.5,1].forEach(v=>{c.beginPath();c.moveTo(x0,Y(v));c.lineTo(x1,Y(v));c.stroke();c.fillText(Math.round(v*100)+'%',x0-4,Y(v));});
+  [[S.cmpA,[]],[S.cmpB,[6,5]]].forEach(([k,dash])=>{curvesFor(k).forEach(cv=>{c.strokeStyle=cv.c;c.lineWidth=2.2;c.setLineDash(dash);c.beginPath();for(let i=0;i<=360;i++){const a=i*2;const v=Math.min(1.12,cv.f(a));i?c.lineTo(X(a),Y(v)):c.moveTo(X(a),Y(v));}c.stroke();});});
+  c.setLineDash([]);const x=X(mod(S.theta,720));c.fillStyle='#ffb020';c.fillRect(x-1,y0,2,y1-y0);
+}
+function renderGearTable(){
+  const m=vA.model;if(!m||!m.read)return;const r=m.read;
+  $('#readout').innerHTML=`<span>Motore</span><span>${Math.round(S.rpm).toLocaleString('it-IT')} giri/min</span><span>Albero primario</span><span>${Math.round(r.rpmIn).toLocaleString('it-IT')} giri/min</span><span>Albero secondario</span><span>${Math.round(r.rpmOut).toLocaleString('it-IT')} giri/min</span><span>Velocità stimata*</span><span>${Math.round(r.kmh)} km/h</span>`;
+  const rows=RAT.map((q,i)=>{const kmh=S.rpm/PRIM/q/FINAL*WHEEL*60/1000;return `<tr class="${S.gear===i+1?'on':''}"><td>${i+1}ª</td><td><div class="bar"><i style="width:${(q/2.6*100).toFixed(0)}%"></i></div></td><td>${q.toFixed(2).replace('.',',')}</td><td>${Math.round(kmh)} km/h</td></tr>`;}).join('');
+  $('#gearTable').innerHTML=`<tr><td colspan="4" style="color:var(--mut);font-size:11.5px">Rapporti del cambio e velocità al regime scelto. *Stima con primaria 28/15, finale 42/15, ruota da 1,95 m.</td></tr>`+rows;
+}
+
+/* ================= loop ================= */
+let last=performance.now(),uiT=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  S.dth=S.playing?dt*S.speed*360:0;if(S.pendStep){S.dth+=S.pendStep;S.pendStep=0;}S.theta+=S.dth;
+  S.explode+=(S.explodeT-S.explode)*Math.min(1,dt*6);if(Math.abs(S.explodeT-S.explode)<.001)S.explode=S.explodeT;
+  const t=now/1000;
+  vA.tick(dt,t);if(S.tab==='cmp')vB.tick(dt,t);
+  drawTimeline();if(S.tab==='cmp')drawChart();
+  updSteps();
+  uiT+=dt;if(uiT>.15){uiT=0;if(S.tab==='trans')renderGearTable();}
+  requestAnimationFrame(frame);
+}
+setTab(fromHash()||'4t',true);
+window.addEventListener('hashchange',()=>{const k=fromHash();if(k&&k!==S.tab)setTab(k,true);});
+requestAnimationFrame(frame);
+window.__S=S;
+})();
+</script>
+</body>
+</html>
