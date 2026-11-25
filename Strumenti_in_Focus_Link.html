@@ -53,10 +53,8 @@ select{font:inherit;padding:9px 10px;border:1px solid var(--hair);border-radius:
 <div id="list"></div>
 <div class="card" id="imgcard">
 <h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--magenta);margin:0 0 6px;font-weight:400;font-family:WidibaMedium,sans-serif">Immagini per l'articolo</h3>
-<div class="sub">Icone nello stile di Strumenti in Focus, larghe 1200 px come le immagini degli articoli in app: un'immagine con tutte le categorie e una per ciascuna, sia solo icona sia icona con nome. Nello zip c'è anche <b>link.txt</b> con il link da associare a ogni immagine.</div>
-<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px"><label for="bg" style="margin:0">Sfondo</label>
-<select id="bg" onchange="scheduleImages()"><option value="avorio">Avorio (come l'app)</option><option value="bianco">Bianco</option><option value="trasparente">Trasparente</option></select>
-<button class="pri" onclick="dlAll()">Scarica tutte le immagini (.zip)</button></div>
+<div class="sub">Icone nello stile di Strumenti in Focus, larghe 1200 px come le immagini degli articoli in app: un'immagine con tutte le categorie e una per ciascuna, sia solo icona sia icona con nome. Lo sfondo è trasparente (si vedono solo il tondo dell'icona e il riquadro), così vanno bene anche con l'app in modalità notturna. Nello zip c'è anche <b>link.txt</b> con il link da associare a ogni immagine.</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px"><button class="pri" onclick="dlAll()">Scarica tutte le immagini (.zip)</button></div>
 <div id="imgs" style="margin-top:6px"></div>
 </div>
 </main>
@@ -197,6 +195,7 @@ function svgImg(paths,color){
 }
 const BG={avorio:"#F5F1E9",bianco:"#FFFFFF",trasparente:null};
 function rr(x,c,y,w,h,r){x.beginPath();x.moveTo(c+r,y);x.arcTo(c+w,y,c+w,y+h,r);x.arcTo(c+w,y+h,c,y+h,r);x.arcTo(c,y+h,c,y,r);x.arcTo(c,y,c+w,y,r);x.closePath();}
+function tint(h,a){const n=parseInt(h.slice(1),16),m=v=>Math.round(255-(255-v)*a);return `rgb(${m(n>>16&255)},${m(n>>8&255)},${m(n&255)})`;}
 function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
 function wrap(x,text,maxW,maxLines){const w=text.split(" ");const lines=[];let cur="";for(const t of w){const tr=cur?cur+" "+t:t;if(x.measureText(tr).width<=maxW||!cur)cur=tr;else{lines.push(cur);cur=t;}}if(cur)lines.push(cur);
   if(lines.length>maxLines){const keep=lines.slice(0,maxLines);let l=keep[maxLines-1];while(x.measureText(l+"…").width>maxW&&l.length)l=l.slice(0,-1);keep[maxLines-1]=l+"…";return keep;}return lines;}
@@ -212,7 +211,7 @@ function tagOf(c){
   return [t,r].filter(Boolean).join(" ");
 }
 async function drawIcon(x,cx,cy,d,m,tag){ // cerchio colorato tenue + icona (+ sigla)
-  x.fillStyle=hexA(m.col,.14);x.beginPath();x.arc(cx,cy,d/2,0,Math.PI*2);x.fill();
+  x.fillStyle=tint(m.col,.16);x.beginPath();x.arc(cx,cy,d/2,0,Math.PI*2);x.fill();
   const im=await svgImg(m.ic,m.col);const s=d*(tag?.44:.52);const oy=tag?-d*.08:0;x.drawImage(im,cx-s/2,cy-s/2+oy,s,s);
   if(tag){const fs=Math.round(d*.15);x.font=`${fs}px WidibaBold, sans-serif`;const tw=x.measureText(tag).width,ph=fs*1.55,pw=tw+fs*1.1;
     x.fillStyle=m.col;rr(x,cx-pw/2,cy+d*.24,pw,ph,ph/2);x.fill();x.fillStyle="#FFFFFF";x.textAlign="center";x.textBaseline="middle";x.fillText(tag,cx,cy+d*.24+ph/2+1);x.textAlign="left";x.textBaseline="alphabetic";}
@@ -271,7 +270,7 @@ async function renderImages(){
   if(!cs.length){box.innerHTML=`<div class="sub">Seleziona almeno una categoria per vedere le immagini.</div>`;IMGS=[];return;}
   box.innerHTML=`<div class="sub">Preparo le immagini…</div>`;
   await document.fonts.load("40px WidibaBold");await document.fonts.load("40px WidibaMedium");
-  const bg=document.getElementById("bg").value;const pre=slug(document.getElementById("art").value)||"articolo";
+  const bg="trasparente";const pre=slug(document.getElementById("art").value)||"articolo";
   IMGS=[];
   IMGS.push({grp:"Tutte le categorie",lab:"Solo icone",name:`${pre}_tutte_icone.png`,cv:await imgAllIcons(cs,bg),link:build()});
   IMGS.push({grp:"Tutte le categorie",lab:"Icone e nomi",name:`${pre}_tutte_icone_nomi.png`,cv:await imgAllCards(cs,bg),link:build()});
